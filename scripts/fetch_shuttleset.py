@@ -38,8 +38,9 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         clone = Path(tmp) / "repo"
         print("Cloning metadata only (blobs are fetched lazily by git archive)...")
-        # --filter=blob:none + --sparse avoids downloading the whole repo; no files are checked out.
-        run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse", REPO, str(clone)])
+        # --no-checkout: never touch the working tree (that is what fails on Windows).
+        # --filter=blob:none: fetch file contents lazily, only for the sub-trees we archive.
+        run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--no-checkout", REPO, str(clone)])
 
         for name, subtree in SUBTREES.items():
             out = DEST / name
