@@ -1,0 +1,34 @@
+# Every spatial threshold used by the tactics layer lives here, in metres on a real court.
+# Court frame: x across the court (0..6.10), y along it (0..13.40), net at y = 6.70.
+# All zone logic is computed from the RECEIVER's point of view (see src/tactics/zones.py).
+
+[court]
+width_m = 6.10
+length_m = 13.40
+singles_margin_m = 0.46       # doubles sideline to singles sideline
+
+# (a) Coach zones: the main unit for statistics. Depth bands measured from the net on the
+# receiver's side; lateral split is forehand / backhand side based on the receiver's handedness.
+[coach]
+depth_bands = [
+  { name = "front", lo = 0.0,  hi = 1.98 },   # net to short service line
+  { name = "mid",   lo = 1.98, hi = 5.0 },
+  { name = "rear",  lo = 5.0,  hi = 6.70 },
+]
+body_radius_m = 0.5           # landing within this distance of the receiver => BODY (takes priority)
+
+# (b) Fine grid: heatmaps only, never ranked.
+[fine]
+depth_bands = [
+  { name = "tight_net", lo = 0.0,  hi = 1.0 },
+  { name = "front",     lo = 1.0,  hi = 1.98 },
+  { name = "mid",       lo = 1.98, hi = 5.0 },
+  { name = "rear",      lo = 5.0,  hi = 6.70 },
+]
+lateral_bands = 4             # equal bands across the singles width: FH sideline, FH inner, BH inner, BH sideline
+
+# (c) Receiver-relative shot features.
+[features]
+move_min_m = 0.5              # receiver-to-landing distance below this => "in place" (no movement direction)
+centre_band_m = 0.5           # |x - centre line| below this => "centre" for the cross/straight label
+out_tolerance_m = 0.0         # slack added outside the singles lines before a landing counts as out

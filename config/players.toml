@@ -1,0 +1,55 @@
+# Racket hand per player, used to turn "left/right of the receiver" into forehand/backhand side.
+# Players missing from this table default to right-handed and the report prints a warning.
+#
+# Every entry was verified on 2026-11-04 against the cited source (English Wikipedia infobox
+# "Handedness" field unless noted). Left-handers in the dataset: Kento Momota, Carolina Marin,
+# He Bingjiao, Zhao Junpeng, Supanida Katethong. Viktor Axelsen is right-handed per Wikipedia
+# and a second profile (Sunday Guardian, Apr 2026: "Right-handed, Offensive").
+
+[default]
+handedness = "right"
+
+[players]
+"Viktor AXELSEN" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Viktor_Axelsen" }
+"An Se Young" = { handedness = "right", source = "https://en.wikipedia.org/wiki/An_Se-young" }
+"CHOU Tien Chen" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Chou_Tien-chen" }
+"Kento MOMOTA" = { handedness = "left", source = "https://en.wikipedia.org/wiki/Kento_Momota" }
+"LEE Zii Jia" = { handedness = "right", source = "https://www.mykhel.com/zii-jia-lee-olympics-p1266897/ (Wikipedia infobox has no handedness row)" }
+"CHEN Yufei" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Chen_Yufei" }
+"NG Ka Long Angus" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Ng_Ka_Long" }
+"Anders ANTONSEN" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Anders_Antonsen" }
+"Carolina MARIN" = { handedness = "left", source = "https://en.wikipedia.org/wiki/Carolina_Mar%C3%ADn" }
+"Akane YAMAGUCHI" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Akane_Yamaguchi" }
+"Jonatan CHRISTIE" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Jonatan_Christie" }
+"Anthony Sinisuka GINTING" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Anthony_Sinisuka_Ginting" }
+"Ratchanok INTANON" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Ratchanok_Intanon" }
+"PUSARLA V. Sindhu" = { handedness = "right", source = "https://en.wikipedia.org/wiki/P._V._Sindhu" }
+"HE Bingjiao" = { handedness = "left", source = "https://en.wikipedia.org/wiki/He_Bingjiao" }
+"Kunlavut VITIDSARN" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Kunlavut_Vitidsarn" }
+"SHI Yuqi" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Shi_Yuqi" }
+"Pornpawee CHOCHUWONG" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Pornpawee_Chochuwong" }
+"CHEN Long" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Chen_Long" }
+"Hans-Kristian Solberg VITTINGHUS" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Hans-Kristian_Vittinghus" }
+"Lakshya SEN" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Lakshya_Sen" }
+"ZHAO Jun Peng" = { handedness = "left", source = "https://en.wikipedia.org/wiki/Zhao_Junpeng" }
+"Busanan ONGBAMRUNGPHAN" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Busanan_Ongbamrungphan" }
+"Supanida KATETHONG" = { handedness = "left", source = "https://en.wikipedia.org/wiki/Supanida_Katethong" }
+"Rasmus GEMKE" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Rasmus_Gemke" }
+"LEE Cheuk Yiu" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Lee_Cheuk_Yiu" }
+"Kodai NARAOKA" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Kodai_Naraoka" }
+"WANG Zhi Yi" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Wang_Zhiyi" }
+"Chico Aura DWI WARDOYO" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Chico_Aura_Dwi_Wardoyo" }
+"LI Shi Feng" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Li_Shifeng" }
+"LIEW Daren" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Liew_Daren" }
+"KIDAMBI Srikanth" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Kidambi_Srikanth" }
+"LOH Kean Yew" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Loh_Kean_Yew" }
+"Mia BLICHFELDT" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Mia_Blichfeldt" }
+"Evgeniya KOSETSKAYA" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Evgeniya_Kosetskaya" }
+"Kenta NISHIMOTO" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Kenta_Nishimoto" }
+"Sameer VERMA" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Sameer_Verma" }
+"Neslihan YIGIT" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Neslihan_Yi%C4%9Fit" }
+"Michelle LI" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Michelle_Li_(badminton)" }
+"LU Guang Zu" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Lu_Guangzu" }
+"Gregoria Mariska TUNJUNG" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Gregoria_Mariska_Tunjung" }
+"PRANNOY H. S." = { handedness = "right", source = "https://en.wikipedia.org/wiki/H._S._Prannoy" }
+"Aakarshi KASHYAP" = { handedness = "right", source = "https://en.wikipedia.org/wiki/Aakarshi_Kashyap" }
