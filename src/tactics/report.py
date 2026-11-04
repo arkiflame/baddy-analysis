@@ -78,9 +78,10 @@ def rank_with_stability(
     min_share: float = MIN_STABLE_SHARE,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Top-k among the `pool` best candidates, keeping only those selected in at least
-    `min_share` of the leave-one-match-out folds (`evaluation.selection_frequency`); the
-    pool's unstable candidates come back as the second frame. Both carry `selected_folds`,
-    `folds` and `tentative`. Without a stability table the plain ranking is returned."""
+    `min_share` of the leave-one-match-out folds (`evaluation.selection_frequency`). The
+    second frame holds the patterns the plain top-k would have shown but that fail the
+    stability rule ("less stable"). Both carry `selected_folds`, `folds` and `tentative`.
+    Without a stability table the plain ranking is returned."""
     cand = top_insights(rep, k=pool).copy()
     if cand.empty:
         return cand, cand
@@ -95,7 +96,8 @@ def rank_with_stability(
     cand["folds"] = folds
     stable = cand.selected_folds >= min_share * folds
     top = cand[stable].head(k).reset_index(drop=True)
-    return top, cand[~stable].reset_index(drop=True)
+    unstable = cand.head(k)[~stable.head(k)].reset_index(drop=True)
+    return top, unstable
 
 
 # ---------------------------------------------------------------------------------------
@@ -568,9 +570,8 @@ def write_report(
     if not unstable.empty:
         L.append("### Less stable\n")
         L.append(
-            f"Among the {STABILITY_POOL} best-ranked patterns on the full data, these are "
-            f"selected in fewer than half of the leave-one-match-out folds; read them as "
-            f"candidates, not findings.\n"
+            f"Patterns the full data ranks in its top {TOP_K} but that fewer than half of the "
+            f"leave-one-match-out folds select; read them as candidates, not findings.\n"
         )
         for _, row in unstable.iterrows():
             L.append(

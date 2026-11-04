@@ -149,7 +149,12 @@ leave-one-out schemes, in how many folds the insight was selected at all.
 Why match-level: rallies of one match share players, form and annotator; a rally-level split
 leaks. Why leave-one-out as well: 1-3 holdout matches per player left zone-level claims
 untestable; leave-one-match-out tests every insight on every match while never selecting on it.
-Current counts: `docs/EVALUATION.md`.
+Current counts (five players, 25 insights per scheme, REPLICATES / SAME DIRECTION / FAILS /
+UNTESTABLE): holdout 1 / 8 / 6 / 10, leave-one-match-out 8 / 16 / 1 / 0, leave-one-opponent-out
+7 / 13 / 2 / 3. The holdout's 1-3 matches per player cannot resolve 4-13 point differences, which
+is why its 1 strict replicate and 6 fails are always quoted next to the other two schemes.
+Details in `docs/EVALUATION.md`. The report itself uses the leave-one-match-out folds a second
+way: a top insight is ranked only if it was selected in at least half of them (D27).
 
 ### `cli.py`
 `tactics players`, `tactics report --player NAME [--no-positions --no-habits --no-xp]`,
@@ -199,8 +204,11 @@ Why never the final stroke's zone: it is the outcome.
    and outcomes, MIT licensed. Building perception first would have meant months before any
    tactical result; this way the tactics layer exists and the perception layer plugs into it.
 2. *How do you know an insight is real?*  Wilson CI on the rate, Newcombe CI on the difference
-   from typical pros, a minimum n of 30 on both sides, and three out-of-sample replication
-   schemes with explicit verdicts (`docs/EVALUATION.md`).
+   from typical pros, a minimum n of 30 on both sides, a stability rule (ranked only if selected
+   in at least half of the leave-one-match-out folds, `tentative` if the interval on the
+   difference is wider than 20 points or n is under 60), and three out-of-sample replication
+   schemes with explicit verdicts, always reported side by side (`docs/EVALUATION.md`: holdout
+   1 / 8 / 6 / 10, leave-one-match-out 8 / 16 / 1 / 0, leave-one-opponent-out 7 / 13 / 2 / 3).
 3. *What is the winner's curse here and how do you handle it?*  Screening hundreds of patterns
    and keeping the extremes inflates them. Ranking by the conservative bound of the interval
    penalises small-n extremes, and leave-one-match-out re-measures each chosen insight on matches
@@ -272,11 +280,14 @@ P(the hitter wins the rally | the shot just played). Two models because the hone
 on when you ask: xP-pre sees only what is known before the shuttle lands and is used for every
 per-player number; xP-post adds the landing and is restricted to non-final strokes, because a
 final stroke's landing is the outcome (D23). Logistic regression and gradient boosting, chosen on
-a validation split, scored once on the 14 holdout matches. Result: mid-rally xP is at chance
-(AUC 0.50), the final stroke is predictable (0.79). The report says this first, shows "points
-above expectation" per shot and court band next to typical pros and next to the player's own
-overall, and a Finishing table on final strokes where the model has signal. Intervals are over
-rallies, not strokes.
+a validation split, scored once on the 14 holdout matches. Result, and the first sentence of
+every place xP is described: xP from shot and position data has no signal mid-rally in elite
+singles (holdout AUC 0.50). The 0.79 on final strokes is classifying how an already-decisive
+stroke ends (winner or error), not a working expected-points model. The report leads with that,
+shows "points above expectation" per shot and court band next to typical pros and next to the
+player's own overall so the reader sees what a chance-level model does to per-shot claims, and
+keeps a Finishing table on final strokes, the one execution measure. Intervals are over rallies,
+not strokes.
 
 ### E. Live advantage experiment (`live_state.py`, `docs/M3_BASELINE.md`)
 Does per-stroke state (both positions, distance from base, recent movement, stroke index) give
@@ -298,17 +309,22 @@ advantage bar was built (D24). The report's momentum view is xP per shot.
     aggregating within rally first fixes that. The danger tables condition on a single stroke and
     an event within two strokes of it, where the rally-sharing is much weaker; the holdout and
     leave-one-match-out schemes are the guard there.
-18. *You built xP and it is at chance mid-rally. Was it wasted?*  No: it is the clean negative
-    result that explains the M3 live result and the failed live-advantage experiment, it gives a
-    real finishing metric (Axelsen's final smashes are winners 10 points more often than the model
-    expects, over and above other pros), and the leak check shows what a careless xP model would
-    have reported (AUC 0.986 on final strokes with the landing visible). The feature pipeline is
-    what a richer data source would plug into.
+18. *You built xP and it is at chance mid-rally. Was it wasted?*  It is a negative result and
+    is presented as one: xP from shot and position data has no signal mid-rally in elite singles
+    (holdout AUC 0.50), which explains the M3 live result and the failed live-advantage
+    experiment. What survives is a finishing metric on strokes already known to be decisive
+    (Axelsen's final smashes are winners 10 points more often than the model expects, over and
+    above other pros) and the leak check, which shows what a careless xP model would have
+    reported (AUC 0.986 on final strokes with the landing visible). The 0.79 on final strokes is
+    a winner-versus-error classifier, and the write-up never calls it an expected-points model.
 19. *How do you stop entropy from flattering players with few samples?*  Plug-in entropy is biased
     low for small n. We apply the Miller-Madow correction and, more importantly, never compare
     with the population at its full n: the population's replies are subsampled to the player's n
     200 times and the player's value is judged against that band.
 20. *What did the leave-one-out evaluation change about how you present insights?*  It made
-    selection stability visible ("selected in 15 of 20 folds") and separated REPLICATES from SAME
-    DIRECTION, so an insight supported by one or two matches is labelled as such instead of being
-    called replicated because a wide holdout interval happened to overlap.
+    selection stability part of the ranking: the report prints "stable in 15 of 20 folds" next to
+    each top insight, ranks only patterns selected in at least half of the folds and lists the
+    rest as "less stable"; it flags `tentative` rows (interval on the difference wider than 20
+    points, or n under 60); and it separated REPLICATES from SAME DIRECTION, so an insight
+    supported by one or two matches is labelled as such instead of being called replicated
+    because a wide holdout interval happened to overlap.

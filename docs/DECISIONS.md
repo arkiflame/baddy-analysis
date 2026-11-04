@@ -179,8 +179,10 @@ Means carry t-intervals and differences Welch intervals.
   visible, `docs/XP.md`).
 * Hyper-parameters and the model family per feature set are chosen on a match-level validation
   split inside the development matches; the 14 holdout matches are scored once.
-* Result: mid-rally xP is at chance (holdout AUC 0.50 on non-final strokes), informative only at
-  the final stroke (0.79). The report says so first, shows "vs own overall" next to "vs typical
+* Result: xP from shot and position data has no signal mid-rally in elite singles (holdout AUC
+  0.50 on non-final strokes); the 0.79 on final strokes is classifying how an already-decisive
+  stroke ends, not a working xP model, and every doc leads with the negative result (review fix,
+  2026-11-04). The report says so first, shows "vs own overall" next to "vs typical
   pros", and adds a Finishing table (final strokes) where the model has signal. Per-player
   intervals are over rallies, not strokes: all of a player's strokes in a rally share its outcome.
 * xP added keeps the model's value of the final stroke as the terminal state (not the realised
@@ -221,8 +223,9 @@ report states the thresholds it used.
 * The report's top-5 now comes from the 10 best-ranked candidates on the full data, keeping
   only those selected in at least 50% of the leave-one-match-out folds (the top-5 re-selected
   once per match of the player, same folds and same k as `tactics evaluate`, so the "selected
-  in X of N folds" counts agree between the report and `docs/EVALUATION.md`). The unstable
-  ones are listed under "Less stable" with their fold counts, as candidates rather than findings.
+  in X of N folds" counts agree between the report and `docs/EVALUATION.md`). Patterns the
+  plain top-5 would have shown but that fail the rule are listed under "Less stable" with their
+  fold counts, as candidates rather than findings; stable patterns ranked 6-10 move up.
 * Any ranked insight whose Newcombe interval on the difference is wider than 20 points or
   whose n is under 60 is flagged `tentative`. The thresholds are constants in `report.py`
   (`MIN_STABLE_SHARE`, `TENTATIVE_CI_WIDTH`, `TENTATIVE_MIN_N`).

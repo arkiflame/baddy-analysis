@@ -692,18 +692,22 @@ def section(px: PlayerXP, me: str, res: XPResult, img_rel: str | None) -> list[s
     o = px.overall
     L = [
         "## Expected points (xP)\n",
+        f"**Read this first: xP from shot and position data has no signal mid-rally in elite singles "
+        f"(holdout AUC {auc_nonfinal:.2f} on strokes that did not end the rally).** The same features "
+        f"reach AUC {auc_final:.2f} only on final strokes, where the task is classifying how an "
+        "already-decisive stroke ends (winner or error), not predicting a rally. Nothing in this "
+        "section is a working expected-points model. The tables stay because the 'Finishing' one is "
+        "a real execution measure and the others show what a chance-level model does to per-shot "
+        "claims.\n",
         f"xP is P(the hitter wins the rally | the shot just played), from a model trained on "
         f"{res.counts['dev_matches']} development matches and checked on the "
         f"{res.counts['holdout_matches']} holdout matches (`docs/XP.md`). Every number here uses "
         "**xP-pre**, which sees only what is known before the shuttle lands (shot type, how it was hit, "
         "both players' positions, the receiver's distance from base, stroke index); chosen model: "
-        f"{px.chosen.get('pre', '?')}. Based on {px.n_shots} of {me}'s strokes in {px.n_rallies} rallies.\n",
-        f"**Read this first.** On the holdout, xP-pre is at chance on strokes that did not end the rally "
-        f"(AUC {auc_nonfinal:.2f}) and informative only on the final stroke (AUC {auc_final:.2f}). "
-        "Mid-rally, the model's expectation is therefore close to the base rate for every shot, and "
-        "'points above expectation' mostly measures how often the player wins rallies containing that "
-        "shot. The column 'vs own overall' removes the player's general edge; the 'Finishing' table is "
-        "where the model genuinely knows something.\n",
+        f"{px.chosen.get('pre', '?')}. Based on {px.n_shots} of {me}'s strokes in {px.n_rallies} rallies. "
+        "Mid-rally the model's expectation is close to the base rate for every shot, so 'points above "
+        "expectation' mostly measures how often the player wins rallies containing that shot; the "
+        "column 'vs own overall' removes the player's general edge.\n",
         f"{me}'s overall points above expectation: {o['mean']:+.3f} per rally (95% CI {o['lo']:+.3f} to "
         f"{o['hi']:+.3f}, n={o['n']}); other pros {o['ref_mean']:+.3f}. Intervals are over rallies "
         "(every stroke in a rally shares its outcome).\n",

@@ -88,7 +88,9 @@ def test_stability_ranking_and_tentative_flag(rep):
     stab["folds"] = 4
     top, unstable = rank_with_stability(rep, stab, k=5)
     assert len(top) == 1 and top.iloc[0].key == planted.key
-    assert int(top.iloc[0].selected_folds) == 4 and len(unstable) == len(pool) - 1
+    assert int(top.iloc[0].selected_folds) == 4
+    assert len(unstable) == min(5, len(pool)) - 1  # the plain top-5 minus the stable one
+    assert (unstable.selected_folds == 1).all()
     table = top_insights_table(top, "X", s)
     assert "4 of 4 folds" in table and "stable in" in table
     # without a stability table the plain ranking comes back

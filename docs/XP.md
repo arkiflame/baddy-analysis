@@ -1,4 +1,11 @@
-# xP, expected points: what one shot is worth
+# xP, expected points: a negative result
+
+**xP from shot and position data has no signal mid-rally in elite singles (holdout AUC 0.50).**
+The same features reach AUC 0.79 only on final strokes, where the task is classifying how an
+already-decisive stroke ends (winner or error), not predicting a rally. There is no working
+expected-points model in this repository. This document records the attempt, the leak a
+careless version would have fallen into, and the one per-player table (finishing) where the
+number means something.
 
 Command (12 s on the laptop CPU, scikit-learn):
 
@@ -64,10 +71,12 @@ xP-post on non-final strokes is a flat cloud around 0.5, as the AUC says.
    Adding where the shuttle landed and how far the receiver had to move (xP-post) does not
    change that (0.50-0.51). This agrees with the M3 live result (`docs/M3_BASELINE.md`): elite
    singles rallies are balanced until the decisive exchange.
-2. **At the final stroke the same features are informative (AUC 0.79).** Given that the stroke
-   ended the rally, shot type and position tell a winner from an error reasonably well: a smash
-   from the rear court with the receiver out of position is usually a winner, a lob from the
-   front court that ends the rally is usually an error.
+2. **At the final stroke the same features classify how an already-decisive stroke ends
+   (AUC 0.79).** Given that the stroke ended the rally, shot type and position tell a winner
+   from an error reasonably well: a smash from the rear court with the receiver out of position
+   is usually a winner, a lob from the front court that ends the rally is usually an error. That
+   is a winner-versus-error classifier for strokes already known to be decisive, not expected
+   points.
 3. **So per-player xP claims must be read carefully.** "Actual minus xP" on all strokes mostly
    measures how often the player wins rallies that contain that shot, because xP is close to the
    base rate mid-rally. The report therefore shows, for every shot type and court band:
@@ -75,7 +84,7 @@ xP-post on non-final strokes is a flat cloud around 0.5, as the AUC says.
    Welch interval, and **"vs own overall"**, the within-player contrast that removes the player's
    general edge. Intervals are computed over rallies, not strokes, because every stroke a
    player hits in a rally shares that rally's outcome.
-4. **"Finishing" is where xP adds information.** On final strokes only, "actual minus xP" is a
+4. **"Finishing" is the one table where the number means something.** On final strokes only, "actual minus xP" is a
    genuine execution number: given that the player's stroke ended the rally and what the model
    expected from the situation, how often was it a winner.
 

@@ -15,6 +15,7 @@ against each and reports the replication results of the current (v2) ranking.
 | Winner's curse from screening many patterns | ranking by the interval bound nearest zero (the smallest difference the data still supports) penalises small-n extremes; at most two shot-and-zone rows and one single-factor row per table in the top-5 | `report.py` |
 | Circular conditions | the rally-ending stroke is never a condition (sequences are the strokes *before* it); `out` / `net_error` zones are excluded from danger analyses | `analyses.py`, D9, D10 |
 | Non-actionable claims in the top-5 | only danger tables (shot type x zone, shot alone, zone alone) are ranked; setups, rally length and game splits are descriptive context | D20 |
+| Unstable selection | a top insight is ranked only if selected in at least half of the leave-one-match-out folds ("stable in X of N folds" printed next to it); the rest are listed as "less stable"; `tentative` if the interval on the difference is wider than 20 points or n < 60 | `report.py`, D27 |
 | Outcome leakage via labels | players are keyed by name; the dataset's A/B labels (A = match winner) are never a variable | `loader.py`, D5 |
 | Threshold sensitivity | all thresholds in `config/zones.toml`; the effect of moving them is measured (section 4) | D8, D26 |
 
@@ -74,6 +75,11 @@ is why the counts below are not comparable with the numbers reported before Phas
 | | | **looo** | | **7** | **13** | **2** | **3** |
 
 Full per-insight output with out-of-sample rates, intervals and fold counts: `outputs/evaluation_raw.md`.
+
+The three schemes are always quoted together. The holdout's 1 strict replicate and 6 fails are
+real, and so is the reason: 1-3 holdout matches per player cannot resolve the 4-13 point
+differences the v2 insights are made of (the out-of-sample interval on such a difference is
+10-20 points wide). The two leave-one-out schemes test every insight on every match.
 
 ### Reading these results honestly
 

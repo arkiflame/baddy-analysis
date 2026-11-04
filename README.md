@@ -22,7 +22,10 @@ uv run python -m tactics zones-check                         # evidence behind t
 A report (example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSEN.md)) contains:
 
 - **Top insights**: the shot-and-zone situations where the player differs most from typical
-  pros, ranked by the smallest difference the data still supports.
+  pros, ranked by the smallest difference the data still supports, kept only if the same
+  pattern is selected in at least half of the leave-one-match-out folds ("stable in 15 of 20
+  folds" is printed next to each), and flagged `tentative` when the interval on the difference
+  is wider than 20 points or n is under 60.
 - **How to play against the player** and **what the player should fix**, in coach language.
 - **The evidence**: every danger table (P(point lost within two shots | shot type x zone), for
   shots faced and shots played) with the typical-pro rate and the difference's 95% interval.
@@ -30,8 +33,10 @@ A report (example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSE
   position, how far each opponent shot pulls the player from it, distance per rally as a lower bound.
 - **Habits and set plays**: replies chosen more often than typical pros in the same situation,
   the most predictable situations (entropy), distinctive openings with their win rates.
-- **Expected points (xP)**: points above expectation per shot and court band, with the honest
-  caveat that mid-rally xP is at chance in this data, and a finishing table where it is not.
+- **Expected points (xP)**: a negative result, stated first. xP from shot and position data
+  has no signal mid-rally in elite singles (holdout AUC 0.50); the same features only classify
+  how an already-decisive stroke ends (AUC 0.79). The section shows what that does to per-shot
+  claims and keeps a finishing table, the one place the number is an execution measure.
 - **Context**: how points end, the setups before the decisive stroke, rally length and splits.
 
 Zones are computed from the **receiver's** point of view with a per-player handedness table, so
@@ -52,18 +57,19 @@ backhand, 35% (n=81) vs 23% for typical pros (+11, CI +2 to +23).
 
 | Feature | Verified result |
 |---|---|
-| Replication, 5 players x 5 insights (`docs/EVALUATION.md`) | leave-one-match-out: 8 replicate, 16 same direction, 1 fail; leave-one-opponent-out: 7 / 13 / 2 (+3 untestable); holdout (1-3 matches per player): 1 / 8 / 6 (+10 untestable) |
+| Replication, 5 players x 5 insights (`docs/EVALUATION.md`), verdicts REPLICATES / SAME DIRECTION / FAILS / UNTESTABLE | holdout (1-3 matches per player): 1 / 8 / 6 / 10; leave-one-match-out: 8 / 16 / 1 / 0; leave-one-opponent-out: 7 / 13 / 2 / 3. The holdout's 1-3 matches cannot resolve the 4-13 point differences the insights are made of, so its 1 strict replicate and 6 fails are reported next to the two leave-one-out schemes, not instead of them |
 | Threshold sensitivity (`outputs/sensitivity.md`) | front/mid at 2.5 m keeps 22 of 25 top-5 insights; body radius 0.75 m keeps 16 of 25 |
 | Position maps (Axelsen) | base position 3.82 m from the net; pulled 1.22 m from base by pushes vs 1.62 m for typical pros (-0.39, CI -0.47 to -0.32); 1.58 m per own stroke vs 1.70 m |
 | Habits (Axelsen) | smashes 75% of clears to his rear backhand vs 37% for typical pros (+38, CI +31 to +44); reply entropy there 2.18 bits vs 3.11 for typical pros at the same n; opens short serve > net > lob in 32% of service rallies vs 19% |
-| xP (`docs/XP.md`) | holdout AUC 0.50 on non-final strokes (both feature sets, both model families), 0.79 on final strokes; leak check with the final zone visible 0.986; Axelsen's finishing smashes +0.104 points above typical pros' (CI +0.039 to +0.168) |
+| xP (`docs/XP.md`) | **negative result**: xP from shot and position data has no signal mid-rally (holdout AUC 0.50 on non-final strokes, both feature sets, both model families); 0.79 only when classifying how an already-decisive stroke ends; leak check with the final zone visible 0.986; finishing table: Axelsen's final smashes are winners 10 points more often than typical pros' (+0.104, CI +0.039 to +0.168) |
 | Live advantage experiment (`docs/M3_BASELINE.md`) | FAIL: best live-prefix AUC 0.498 vs the 0.60 bar; no bar built |
 | M3 baseline (`docs/M3_BASELINE.md`) | live AUC 0.50-0.52; pre-final logistic AUC 0.730; full rally with the final zone masked GRU AUC 0.815 |
 | Shuttle tracking (M2 tooling) | TrackNetV3 wrapper detects a synthetic shuttle in 28 of 48 frames, median error 2.4 px |
 
-Two negative results are part of the deliverable: with ShuttleSet's per-stroke information a
-professional singles rally in progress does not reveal its winner, with or without position and
-movement features. Both are documented with the commands that show it.
+Two negative results are part of the deliverable. xP from shot and position data has no signal
+mid-rally in elite singles (holdout AUC 0.50), and a rally in progress does not reveal its winner
+to a sequence model either, with or without position and movement features (AUC 0.50 against a
+0.60 pass bar set in advance). Both are documented with the commands that show it.
 
 ## Setup
 
