@@ -51,7 +51,9 @@ def main() -> int:
         "## Settings\n",
         "\n".join(f"- **{k}**: {v}" for k, v in res["settings"].items()),
         "\n\n## Data\n",
-        pd.Series({k: v for k, v in res["counts"].items() if not isinstance(v, dict)}).to_frame("value").to_markdown(),
+        pd.Series({k: v for k, v in res["counts"].items() if not isinstance(v, dict)})
+        .to_frame("value")
+        .to_markdown(),
         f"\n\nP(server wins | last pre-final stroke by server / receiver), train: "
         f"{res['counts']['last_hitter_rates_prefinal_train']}\n",
         "\n## Metrics on the 14 holdout matches\n",

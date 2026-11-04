@@ -57,14 +57,19 @@ class Tracker:
 
         if not weights.exists():
             raise FileNotFoundError(f"{weights} missing: see docs/research for the download")
-        dev = torch.device("cuda" if device == "auto" and torch.cuda.is_available() else
-                           ("cpu" if device == "auto" else device))
+        dev = torch.device(
+            "cuda"
+            if device == "auto" and torch.cuda.is_available()
+            else ("cpu" if device == "auto" else device)
+        )
         ckpt = torch.load(weights, map_location=dev, weights_only=False)
         seq_len, bg_mode = ckpt["param_dict"]["seq_len"], ckpt["param_dict"]["bg_mode"]
         TrackNet = _import_tracknet_class()
-        in_dim = {"subtract": seq_len, "subtract_concat": seq_len * 4, "concat": (seq_len + 1) * 3}.get(
-            bg_mode, seq_len * 3
-        )
+        in_dim = {
+            "subtract": seq_len,
+            "subtract_concat": seq_len * 4,
+            "concat": (seq_len + 1) * 3,
+        }.get(bg_mode, seq_len * 3)
         net = TrackNet(in_dim=in_dim, out_dim=seq_len).to(dev)
         net.load_state_dict(ckpt["model"])
         net.eval()
@@ -97,7 +102,11 @@ class Tracker:
             if self.bg_mode in ("subtract", "subtract_concat"):
                 diff = np.abs(rgb.astype(int) - np.moveaxis(median, 0, -1).astype(int)).sum(2)
                 diff = np.clip(diff, 0, 255).astype(np.uint8)[None]
-                chans.append(diff if self.bg_mode == "subtract" else np.concatenate([np.moveaxis(rgb, -1, 0), diff]))
+                chans.append(
+                    diff
+                    if self.bg_mode == "subtract"
+                    else np.concatenate([np.moveaxis(rgb, -1, 0), diff])
+                )
             else:
                 chans.append(np.moveaxis(rgb, -1, 0))
         x = np.concatenate(chans, axis=0)
@@ -168,7 +177,11 @@ class Tracker:
             batch_idx.append(idxs)
         flush()
         cap.release()
-        return pd.DataFrame(rows, columns=["frame", "x", "y", "visible"]).sort_values("frame").reset_index(drop=True)
+        return (
+            pd.DataFrame(rows, columns=["frame", "x", "y", "visible"])
+            .sort_values("frame")
+            .reset_index(drop=True)
+        )
 
 
 def write_tracknet_csv(df: pd.DataFrame, path: Path) -> None:
@@ -177,12 +190,16 @@ def write_tracknet_csv(df: pd.DataFrame, path: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("video", type=Path)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--weights", type=Path, default=DEFAULT_WEIGHTS)
     ap.add_argument("--cpu", action="store_true")
-    ap.add_argument("--tracknet-csv", type=Path, default=None, help="also write TrackNet-format CSV")
+    ap.add_argument(
+        "--tracknet-csv", type=Path, default=None, help="also write TrackNet-format CSV"
+    )
     a = ap.parse_args(argv)
     tracker = Tracker.load(a.weights, device="cpu" if a.cpu else "auto")
     df = tracker.track(a.video)

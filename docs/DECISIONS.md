@@ -103,10 +103,42 @@ lines of preprocessing (median background, 288x512 resize, channel stacking) and
 decoding (largest contour centre). Verified end to end on a synthetic clip: 28/48 frames
 detected, median error 2.4 px, 100% within 15 px (`tests/test_tracknet.py`).
 
-### D18. Two early commits still carry a `Co-Authored-By: Claude` trailer — REVIEW
+### D18. Two early commits still carry a `Co-Authored-By: Claude` trailer — RESOLVED 2026-11-04
 Stripping it needs a history rewrite and a force-push, which the session's safety rules blocked.
 Every later commit is trailer-free. To clean the first two (safe: private repo, no other
 contributors):
 
     git filter-branch -f --msg-filter 'grep -v Co-Authored-By' -- main overnight-1
     git push --force origin main overnight-1
+
+Resolved: the user approved the rewrite; `git filter-branch --msg-filter "sed '/Co-Authored-By/d'"`
+was run over main, overnight-1 and insights-v2, verified with
+`git log --all --format='%h %(trailers:key=Co-Authored-By)'`, and main + overnight-1 were
+force-pushed. New heads: main 12e5e15, overnight-1 8be9d7d.
+
+## features-v3 branch (Phase 3, 2026-11-04 evening)
+
+### D19. Every rate is compared with "typical pros": the same pattern over all other players
+The reference for "shots faced" is every stroke whose receiver is another player; for "shots
+played" every stroke whose hitter is another player. Exclusion is by ROLE, not by match: the
+player's opponents facing the player's shots are other pros facing that pattern, so they stay in
+the reference. The difference carries Newcombe's hybrid-score 95% interval (checked against the
+1998 paper's example 56/70 vs 48/80 -> 0.0524..0.3339). Candidates need n >= 30 on both sides and
+an interval that excludes zero; they are ranked by the interval bound nearest zero, i.e. the
+smallest difference the data still supports. This replaces ranking by shrunk lift over the
+player's own baseline (D12/D13): shrinkage is still computed but no longer drives anything, and
+"opponents' smashes hurt" has gone from insight 2 to "Axelsen loses less after smashes than
+typical pros", which is the player-specific statement.
+
+For the symmetric win-rate splits (rally length, game number, pressure, serving) the population
+is 50% by construction (each rally has one winner and one loser), so their reference is the
+player's own overall rate and they are shown as context, never ranked.
+
+### D20. Top insights come only from actionable tables
+"Point decided right after P:lob > O:smash" conditions on the rally ending, and rally-length or
+game-number effects give a coach nothing to say between points. The ranked top-5 and the two
+coach sections ("how to play against", "what to fix") therefore draw only from the danger tables
+(shot type x zone, shot alone, zone alone; all data, game 3, 18+). The setups, endings and
+splits remain in the report as a descriptive section with their own typical-pro comparison.
+Shots of unknown type are excluded from the danger tables.
+

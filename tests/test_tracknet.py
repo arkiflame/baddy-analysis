@@ -25,7 +25,9 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def make_synthetic_video(path: Path, n_frames: int = 48, size=(640, 360), fps: int = 30) -> np.ndarray:
+def make_synthetic_video(
+    path: Path, n_frames: int = 48, size=(640, 360), fps: int = 30
+) -> np.ndarray:
     """Write a clip and return the ground-truth (n_frames, 2) shuttle centre per frame."""
     w, h = size
     writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
@@ -63,7 +65,11 @@ def test_wrapper_runs_end_to_end(tmp_path):
     assert df.x.between(0, 640).all() and df.y.between(0, 360).all()
 
     vis = df[df.visible == 1]
-    err = np.hypot(vis.x - truth[vis.frame, 0], vis.y - truth[vis.frame, 1]) if len(vis) else np.array([])
+    err = (
+        np.hypot(vis.x - truth[vis.frame, 0], vis.y - truth[vis.frame, 1])
+        if len(vis)
+        else np.array([])
+    )
     print(
         f"\nsynthetic clip: {len(df)} frames, {len(vis)} detections, "
         f"median error {np.median(err) if len(err) else float('nan'):.1f} px, "

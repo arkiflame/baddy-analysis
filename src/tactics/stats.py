@@ -97,3 +97,57 @@ def two_proportion_z(k1, n1, k2, n2) -> float:
 
 def fmt_rate(rate: float, lo: float, hi: float) -> str:
     return f"{rate:.0%} (95% CI {lo:.0%}-{hi:.0%})"
+
+
+# ---------------------------------------------------------------------------------------
+# Comparing a player's rate with a reference rate (v2: "how different from typical pros")
+# ---------------------------------------------------------------------------------------
+
+
+def newcombe_diff_ci(k1, n1, k2, n2, z: float = Z95):
+    """CI for p1 - p2 by Newcombe's hybrid score method (method 10 in Newcombe 1998).
+
+    It combines the two Wilson intervals, so it behaves well when one proportion is near 0 or 1
+    and when one sample is small. Checked against the paper's example 56/70 vs 48/80 ->
+    (0.0524, 0.3339). Works on scalars or arrays.
+    """
+    k1, n1, k2, n2 = (np.asarray(v, dtype=float) for v in (k1, n1, k2, n2))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        p1 = np.where(n1 > 0, k1 / n1, np.nan)
+        p2 = np.where(n2 > 0, k2 / n2, np.nan)
+    l1, u1 = wilson_ci(k1, n1, z)
+    l2, u2 = wilson_ci(k2, n2, z)
+    d = p1 - p2
+    lo = d - np.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)
+    hi = d + np.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+    return lo, hi
+
+
+def compare_to_reference(
+    t: pd.DataFrame, ref: pd.DataFrame, settings: RateSettings | None = None
+) -> pd.DataFrame:
+    """Attach a reference rate (same `key`) to a rate table and the CI on the difference.
+
+    `ref` needs columns key, n, wins. Adds ref_n, ref_wins, ref_rate, delta (= rate - ref_rate),
+    delta_lo, delta_hi, ref_reliable (ref_n >= min_n), delta_excludes_zero and `score`, the
+    difference's confidence bound nearest zero (0 when the interval contains zero). Ranking by
+    `score` prefers effects that are both large and well measured over merely large ones.
+    Keys absent from the reference get NaN and are never ranked.
+    """
+    settings = settings or RateSettings()
+    r = ref[["key", "n", "wins"]].rename(columns={"n": "ref_n", "wins": "ref_wins"})
+    out = t.merge(r, on="key", how="left")
+    out["ref_n"] = out["ref_n"].fillna(0).astype(int)
+    out["ref_wins"] = out["ref_wins"].fillna(0).astype(int)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out["ref_rate"] = np.where(out.ref_n > 0, out.ref_wins / out.ref_n, np.nan)
+    out["delta"] = out["rate"] - out["ref_rate"]
+    out["delta_lo"], out["delta_hi"] = newcombe_diff_ci(
+        out["wins"], out["n"], out["ref_wins"], out["ref_n"], settings.z
+    )
+    out["ref_reliable"] = out["ref_n"] >= settings.min_n
+    out["delta_excludes_zero"] = (out.delta_lo > 0) | (out.delta_hi < 0)
+    out["score"] = np.where(
+        out.delta_excludes_zero, np.minimum(out.delta_lo.abs(), out.delta_hi.abs()), 0.0
+    )
+    return out

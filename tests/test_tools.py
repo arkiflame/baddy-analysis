@@ -11,19 +11,20 @@ cv2 = pytest.importorskip("cv2")
 
 # ---- label session -------------------------------------------------------------------------
 
+
 def test_hits_landing_and_score_follow_shuttleset_conventions():
     s = LabelSession(video="v.mp4", fps=30.0)
     s.click(10, 100, 200)
-    s.add_hit(10)                    # A serves (default player A)
-    s.set_shot("1")                  # short service
+    s.add_hit(10)  # A serves (default player A)
+    s.set_shot("1")  # short service
     s.click(25, 300, 220)
-    s.add_hit(25)                    # B replies
-    s.set_shot("4")                  # lob
+    s.add_hit(25)  # B replies
+    s.set_shot("4")  # lob
     s.set_position("hitter", 310, 400)
     s.set_position("opponent", 90, 390)
     s.click(40, 120, 260)
-    s.add_hit(40)                    # A
-    s.set_shot("7")                  # smash
+    s.add_hit(40)  # A
+    s.set_shot("7")  # smash
     s.end_rally("A")
 
     df = s.strokes_frame()
@@ -39,10 +40,12 @@ def test_hits_landing_and_score_follow_shuttleset_conventions():
     assert (df.player_location_x.iloc[1], df.opponent_location_y.iloc[1]) == (310, 390)
     # score is written as the score AFTER the rally, like ShuttleSet; winner only on the last stroke
     assert df.roundscore_A.tolist() == [1, 1, 1] and df.roundscore_B.tolist() == [0, 0, 0]
-    assert df.getpoint_player.isna().tolist()[:2] == [True, True] and df.getpoint_player.iloc[2] == "A"
+    assert (
+        df.getpoint_player.isna().tolist()[:2] == [True, True] and df.getpoint_player.iloc[2] == "A"
+    )
     assert df.server.tolist() == [1, 2, 3]
     assert df.time.iloc[2] == "00:00:01"
-    assert s.current_player == "A"   # the winner serves next
+    assert s.current_player == "A"  # the winner serves next
 
 
 def test_second_rally_and_undo():
@@ -51,13 +54,13 @@ def test_second_rally_and_undo():
     s.set_shot("1")
     s.end_rally("B")
     assert s.score == (0, 1) and s.current_player == "B"
-    s.add_hit(50)                    # B serves rally 2
-    s.add_hit(60)                    # A
-    s.delete_last_hit()              # undo A's hit
+    s.add_hit(50)  # B serves rally 2
+    s.add_hit(60)  # A
+    s.delete_last_hit()  # undo A's hit
     assert len(s.rallies) == 2 and len(s.rallies[1].hits) == 1 and s.current_player == "A"
-    s.delete_last_hit()              # undo B's serve: the empty rally disappears
+    s.delete_last_hit()  # undo B's serve: the empty rally disappears
     assert len(s.rallies) == 1
-    s.delete_last_hit()              # cannot undo into a finished rally
+    s.delete_last_hit()  # cannot undo into a finished rally
     assert len(s.rallies) == 1 and s.rallies[0].winner == "B"
 
 
@@ -87,8 +90,17 @@ def test_loader_reads_labelled_output(tmp_path):
         s.add_hit(f)
         s.set_shot("3")
     s.end_rally("B")
-    m = Match(id="own:1", dataset="own", video="v", tournament="club", round="-", date="",
-              player_a="Me", player_b="You", homography=np.eye(3))
+    m = Match(
+        id="own:1",
+        dataset="own",
+        video="v",
+        tournament="club",
+        round="-",
+        date="",
+        player_a="Me",
+        player_b="You",
+        homography=np.eye(3),
+    )
     g = game_from_frame(s.strokes_frame(), 1, m)
     assert g.rallies[0].winner == "You" and g.rallies[0].length == 3
     assert g.rallies[0].score_before == (0, 0) and g.rallies[0].score_after == (0, 1)
@@ -96,10 +108,13 @@ def test_loader_reads_labelled_output(tmp_path):
 
 # ---- calibration ---------------------------------------------------------------------------
 
+
 def test_homography_maps_clicked_corners_onto_the_canvas():
     from tactics.tools.calibrate_court import homography_from_corners, homography_row
 
-    corners = np.array([[400, 300], [880, 300], [250, 700], [1030, 700]], dtype=float)  # a trapezoid
+    corners = np.array(
+        [[400, 300], [880, 300], [250, 700], [1030, 700]], dtype=float
+    )  # a trapezoid
     h = homography_from_corners(corners)
     m = court.pixels_to_metres(h, corners)
     np.testing.assert_allclose(m, [[0, 0], [6.1, 0], [0, 13.4], [6.1, 13.4]], atol=1e-6)

@@ -46,3 +46,24 @@ def test_rate_table_flags_rare_and_significant_groups():
 def test_two_proportion_z():
     assert stats.two_proportion_z(50, 100, 50, 100) == pytest.approx(1.0)
     assert stats.two_proportion_z(80, 100, 50, 100) < 0.001
+
+
+def test_newcombe_matches_published_example():
+    # Newcombe (1998), example (a): 56/70 vs 48/80, hybrid score method -> (0.0524, 0.3339)
+    lo, hi = stats.newcombe_diff_ci(56, 70, 48, 80)
+    assert lo == pytest.approx(0.0524, abs=5e-4) and hi == pytest.approx(0.3339, abs=5e-4)
+    lo, hi = stats.newcombe_diff_ci(9, 10, 3, 10)
+    assert lo == pytest.approx(0.1705, abs=5e-4) and hi == pytest.approx(0.8090, abs=5e-4)
+
+
+def test_compare_to_reference_scores_by_bound_nearest_zero():
+    t = pd.DataFrame({"key": ["a", "b", "c"], "n": [100, 100, 10], "wins": [70, 50, 9]})
+    t["rate"] = t.wins / t.n
+    ref = pd.DataFrame({"key": ["a", "b"], "n": [1000, 1000], "wins": [500, 500]})
+    out = stats.compare_to_reference(t, ref).set_index("key")
+    assert out.loc["a", "delta"] == pytest.approx(0.2)
+    assert out.loc["a", "delta_excludes_zero"] and out.loc["a", "score"] > 0
+    assert out.loc["a", "score"] == pytest.approx(out.loc["a", "delta_lo"])
+    assert not out.loc["b", "delta_excludes_zero"] and out.loc["b", "score"] == 0
+    assert out.loc["c", "ref_n"] == 0 and np.isnan(out.loc["c", "delta"])
+    assert not out.loc["c", "ref_reliable"]

@@ -41,7 +41,9 @@ def main() -> int:
         print(f"source already present: {SRC_DIR}")
     else:
         SRC_DIR.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "--quiet", "--depth", "1", SRC_REPO, str(SRC_DIR)], check=True)
+        subprocess.run(
+            ["git", "clone", "--quiet", "--depth", "1", SRC_REPO, str(SRC_DIR)], check=True
+        )
         print(f"cloned TrackNetV3 -> {SRC_DIR}")
 
     WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
