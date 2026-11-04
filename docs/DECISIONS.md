@@ -155,3 +155,18 @@ bound. Base position = median receive position when the opponent hits a non-serv
 "pull" = distance from that base to where the reply was hit, by the opponent's shot type.
 Means carry t-intervals and differences Welch intervals.
 
+### D22. Habits, predictability and set plays
+* A habit is a reply share compared with other pros in the SAME situation (incoming shot type
+  and zone from the replier's view), never with the player's own average reply: "smashes a lot"
+  is not a habit, "smashes 75% of clears to the rear backhand when typical pros smash 37%" is.
+  Situations are offered at two granularities (shot -> zone, shot -> any) because zone-level
+  cells are often under n = 30.
+* Predictability uses Shannon entropy with the Miller-Madow correction. Plug-in entropy is
+  biased low for small n, and so is the corrected value to a lesser degree, so the population is
+  never compared at its full n: its replies are SUBSAMPLED to the player's n (200 draws) and the
+  player's entropy is judged against that band. Reply = shot and target zone; replies that ended
+  the rally with an error are excluded (an error is an outcome, not a choice).
+* Set plays are the first 3 and 4 strokes as shot types, split by who served, ranked by the
+  difference in share versus other pros in the same role. The win rate is shown but does not
+  drive the ranking: with 30-200 rallies per opening its interval is wide.
+

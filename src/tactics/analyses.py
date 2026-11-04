@@ -143,6 +143,9 @@ def rally_frame(ps: pd.DataFrame, s: AnalysisSettings) -> pd.DataFrame:
     r["last2"] = tokens.map(lambda t: " > ".join(t[-3:-1]) if len(t) >= 3 else None).to_numpy()
     r["last3"] = tokens.map(lambda t: " > ".join(t[-4:-1]) if len(t) >= 4 else None).to_numpy()
     r["end_token"] = tokens.map(lambda t: t[-1]).to_numpy()
+    # openings for the set-play analysis: the first k strokes INCLUDING the serve
+    r["first3"] = tokens.map(lambda t: " > ".join(t[:3]) if len(t) >= 3 else None).to_numpy()
+    r["first4"] = tokens.map(lambda t: " > ".join(t[:4]) if len(t) >= 4 else None).to_numpy()
     r["end_type"] = np.select(
         [
             r.player_won & r.last_hit_by_player,

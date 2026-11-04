@@ -231,6 +231,112 @@ Per own stroke (controls for rally length):
 | at 18+        | 210  | 1.55     | 1.42-1.68 | 1.65 (n=2094)  | -0.11 (-0.24 to +0.03) |        |
 | before 18     | 1167 | 1.58     | 1.53-1.63 | 1.70 (n=11649) | -0.12 (-0.18 to -0.07) | signal |
 
+## Habits and set plays
+
+Based on 6923 of Axelsen's replies to a known in-play shot. A *situation* is the opponent's shot type and the zone it landed in (from Axelsen's view, body included); '-> any' pools the zones. A *habit* is a reply chosen significantly more often than typical pros in the same situation (n >= 30 situations on both sides, Newcombe 95% interval on the difference of shares excludes zero). Habits found: 45 by reply shot type, 110 by reply shot and target zone.
+
+### Habits by reply shot type
+
+| situation (incoming shot -> zone)   | reply   | n (situations)   | share   | 95% CI   | typical pros   | difference (95% CI)   |
+|:------------------------------------|:--------|:-----------------|:--------|:---------|:---------------|:----------------------|
+| clear -> rear_bh                    | smash   | 191              | 75%     | 69%-81%  | 37% (n=2558)   | +38 (+31 to +44)      |
+| lob -> rear_bh                      | smash   | 469              | 72%     | 67%-76%  | 41% (n=5681)   | +31 (+26 to +35)      |
+| clear -> any                        | smash   | 510              | 65%     | 61%-69%  | 35% (n=6262)   | +30 (+26 to +34)      |
+| clear -> rear_fh                    | smash   | 280              | 56%     | 51%-62%  | 28% (n=2793)   | +28 (+22 to +34)      |
+| lob -> any                          | smash   | 902              | 62%     | 59%-65%  | 38% (n=11466)  | +24 (+21 to +27)      |
+| push_rush -> rear_bh                | smash   | 60               | 60%     | 47%-71%  | 28% (n=1225)   | +32 (+19 to +44)      |
+| long_service -> any                 | smash   | 35               | 80%     | 64%-90%  | 46% (n=1220)   | +34 (+18 to +44)      |
+| net -> front_bh                     | lob     | 720              | 70%     | 67%-73%  | 49% (n=6029)   | +21 (+17 to +24)      |
+| net -> mid_bh                       | lob     | 105              | 57%     | 48%-66%  | 31% (n=521)    | +26 (+15 to +35)      |
+| net -> any                          | lob     | 1686             | 66%     | 63%-68%  | 49% (n=13486)  | +16 (+14 to +19)      |
+
+### Habits by reply shot and target zone
+
+Target zone from the opponent's view; replies that ended the rally with an error are excluded here.
+
+| situation (incoming shot -> zone)   | reply           | n (situations)   | share   | 95% CI   | typical pros   | difference (95% CI)   |
+|:------------------------------------|:----------------|:-----------------|:--------|:---------|:---------------|:----------------------|
+| lob -> rear_bh                      | smash -> mid_fh | 440              | 49%     | 45%-54%  | 21% (n=5260)   | +28 (+24 to +33)      |
+| clear -> rear_bh                    | smash -> mid_fh | 180              | 47%     | 40%-54%  | 18% (n=2345)   | +29 (+21 to +36)      |
+| push_rush -> rear_bh                | smash -> mid_fh | 56               | 45%     | 32%-58%  | 14% (n=1134)   | +31 (+18 to +44)      |
+| net -> front_bh                     | lob -> rear_bh  | 672              | 47%     | 43%-51%  | 26% (n=5514)   | +21 (+17 to +25)      |
+| net -> any                          | lob -> rear_bh  | 1594             | 42%     | 39%-44%  | 25% (n=12404)  | +17 (+14 to +19)      |
+| clear -> rear_fh                    | smash -> mid_bh | 261              | 34%     | 29%-40%  | 15% (n=2598)   | +19 (+14 to +25)      |
+| lob -> any                          | smash -> mid_fh | 856              | 33%     | 30%-36%  | 16% (n=10673)  | +16 (+13 to +20)      |
+| defensive -> front_bh               | lob -> rear_bh  | 200              | 33%     | 27%-40%  | 13% (n=1673)   | +20 (+13 to +27)      |
+| clear -> any                        | smash -> mid_fh | 478              | 32%     | 28%-37%  | 16% (n=5797)   | +17 (+13 to +21)      |
+| net -> mid_bh                       | lob -> rear_bh  | 99               | 37%     | 28%-47%  | 16% (n=468)    | +21 (+12 to +31)      |
+
+### Most predictable situations
+
+Shannon entropy (bits, Miller-Madow corrected, bootstrap 95% interval) of Axelsen's reply (shot and target zone) per situation, next to typical pros' entropy estimated by subsampling their replies to Axelsen's n (mean and 2.5-97.5 percentiles over 200 draws). 'Effective replies' = 2^entropy: how many equally likely replies the distribution is worth. A situation is flagged when the entropy falls outside the typical-pro band.
+
+| situation            | n   | entropy (bits)   | typical pros at same n   | effective replies   | most common reply     | flag             |
+|:---------------------|:----|:-----------------|:-------------------------|:--------------------|:----------------------|:-----------------|
+| clear -> rear_bh     | 180 | 2.18 (1.93-2.32) | 3.11 (2.95-3.30)         | 4.5                 | smash -> mid_fh (47%) | more predictable |
+| lob -> mid_fh        | 32  | 2.34 (1.53-2.59) | 3.14 (2.63-3.65)         | 5.1                 | smash -> mid_bh (41%) | more predictable |
+| push_rush -> rear_bh | 56  | 2.79 (2.19-3.06) | 3.48 (3.09-3.84)         | 6.9                 | smash -> mid_fh (45%) | more predictable |
+| lob -> rear_bh       | 440 | 2.55 (2.34-2.70) | 3.22 (3.09-3.34)         | 5.9                 | smash -> mid_fh (49%) | more predictable |
+| clear -> any         | 478 | 2.66 (2.49-2.74) | 3.30 (3.22-3.40)         | 6.3                 | smash -> mid_fh (32%) | more predictable |
+| net -> mid_bh        | 99  | 2.51 (2.25-2.63) | 3.12 (2.81-3.37)         | 5.7                 | lob -> rear_bh (37%)  | more predictable |
+| clear -> rear_fh     | 261 | 2.84 (2.59-2.98) | 3.38 (3.25-3.51)         | 7.2                 | smash -> mid_bh (34%) | more predictable |
+| push_rush -> mid_fh  | 93  | 3.92 (3.44-3.97) | 4.42 (4.12-4.75)         | 15.2                | drive -> mid_bh (22%) | more predictable |
+| lob -> any           | 856 | 2.98 (2.83-3.05) | 3.45 (3.36-3.52)         | 7.9                 | smash -> mid_fh (33%) | more predictable |
+| lob -> rear_fh       | 343 | 3.05 (2.89-3.16) | 3.51 (3.40-3.61)         | 8.3                 | smash -> mid_bh (33%) | more predictable |
+
+Least predictable situations:
+
+| situation                 | n   | entropy (bits)   | typical pros at same n   | effective replies   | most common reply     | flag   |
+|:--------------------------|:----|:-----------------|:-------------------------|:--------------------|:----------------------|:-------|
+| short_service -> mid_bh   | 79  | 3.30 (2.88-3.40) | 3.17 (2.88-3.43)         | 9.8                 | lob -> rear_bh (23%)  |        |
+| short_service -> front_bh | 119 | 2.92 (2.56-3.06) | 2.86 (2.54-3.15)         | 7.6                 | net -> front_fh (29%) |        |
+| drop -> front_fh          | 134 | 3.06 (2.76-3.17) | 3.00 (2.67-3.31)         | 8.3                 | net -> front_bh (28%) |        |
+| drive -> mid_fh           | 67  | 3.72 (3.04-3.81) | 3.68 (3.27-4.05)         | 13.2                | drive -> mid_bh (28%) |        |
+| defensive -> front_fh     | 218 | 3.14 (2.88-3.26) | 3.12 (2.92-3.32)         | 8.8                 | lob -> rear_bh (28%)  |        |
+
+### Set plays when Axelsen serves
+
+The first three and four strokes as shot types (P = Axelsen, O = opponent), ranked by how distinctive the opening is versus typical pros in the same role (difference in share of rallies, 95% interval); openings seen fewer than 30 times are omitted.
+
+First 3 strokes:
+
+| opening (P = Axelsen, O = opponent)    | rallies   | share   | typical pros   | difference (95% CI)   | Axelsen wins   | typical pros win   | flag        |
+|:---------------------------------------|:----------|:--------|:---------------|:----------------------|:---------------|:-------------------|:------------|
+| P:short_service > O:net > P:lob        | 185       | 32%     | 19% (n=5117)   | +13 (+9 to +17)       | 56% (48%-63%)  | 50%                | distinctive |
+| P:short_service > O:net > P:net        | 53        | 9%      | 15% (n=5117)   | -6 (-9 to -3)         | 58% (45%-71%)  | 49%                | distinctive |
+| P:short_service > O:lob > P:smash      | 65        | 11%     | 7% (n=5117)    | +4 (+1 to +7)         | 63% (51%-74%)  | 52%                | distinctive |
+| P:long_service > O:smash > P:defensive | 56        | 10%     | 9% (n=5117)    | +1 (-1 to +4)         | 71% (59%-82%)  | 50%                |             |
+
+First 4 strokes:
+
+| opening (P = Axelsen, O = opponent)             | rallies   | share   | typical pros   | difference (95% CI)   | Axelsen wins   | typical pros win   | flag        |
+|:------------------------------------------------|:----------|:--------|:---------------|:----------------------|:---------------|:-------------------|:------------|
+| P:short_service > O:net > P:lob > O:smash       | 95        | 18%     | 10% (n=4744)   | +8 (+5 to +12)        | 56% (46%-65%)  | 45%                | distinctive |
+| P:short_service > O:net > P:lob > O:drop        | 61        | 12%     | 5% (n=4744)    | +7 (+4 to +10)        | 61% (48%-72%)  | 57%                | distinctive |
+| P:short_service > O:lob > P:smash > O:defensive | 49        | 9%      | 7% (n=4744)    | +3 (+0 to +6)         | 71% (58%-82%)  | 53%                | distinctive |
+
+### Set plays when Axelsen receives
+
+The first three and four strokes as shot types (P = Axelsen, O = opponent), ranked by how distinctive the opening is versus typical pros in the same role (difference in share of rallies, 95% interval); openings seen fewer than 30 times are omitted.
+
+First 3 strokes:
+
+| opening (P = Axelsen, O = opponent)   | rallies   | share   | typical pros   | difference (95% CI)   | Axelsen wins   | typical pros win   | flag        |
+|:--------------------------------------|:----------|:--------|:---------------|:----------------------|:---------------|:-------------------|:------------|
+| O:short_service > P:lob > O:smash     | 63        | 15%     | 7% (n=5273)    | +8 (+5 to +12)        | 54% (42%-66%)  | 45%                | distinctive |
+| O:short_service > P:lob > O:drop      | 55        | 13%     | 7% (n=5273)    | +7 (+4 to +10)        | 67% (54%-78%)  | 54%                | distinctive |
+| O:short_service > P:net > O:lob       | 79        | 19%     | 21% (n=5273)   | -2 (-5 to +3)         | 56% (45%-66%)  | 49%                |             |
+| O:short_service > P:net > O:net       | 68        | 16%     | 15% (n=5273)   | +2 (-2 to +6)         | 54% (43%-66%)  | 50%                |             |
+
+First 4 strokes:
+
+| opening (P = Axelsen, O = opponent)             | rallies   | share   | typical pros   | difference (95% CI)   | Axelsen wins   | typical pros win   | flag        |
+|:------------------------------------------------|:----------|:--------|:---------------|:----------------------|:---------------|:-------------------|:------------|
+| O:short_service > P:lob > O:smash > P:defensive | 53        | 14%     | 6% (n=4885)    | +7 (+4 to +11)        | 53% (40%-66%)  | 44%                | distinctive |
+| O:short_service > P:lob > O:drop > P:net        | 40        | 10%     | 4% (n=4885)    | +6 (+4 to +10)        | 65% (50%-78%)  | 53%                | distinctive |
+| O:short_service > P:net > O:lob > P:smash       | 51        | 13%     | 11% (n=4885)   | +3 (-0 to +7)         | 45% (32%-59%)  | 54%                |             |
+| O:short_service > P:net > O:net > P:lob         | 43        | 11%     | 9% (n=4885)    | +3 (-0 to +6)         | 51% (37%-65%)  | 44%                |             |
+
 ## Context (descriptive, not ranked)
 
 ### How points end

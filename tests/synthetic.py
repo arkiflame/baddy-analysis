@@ -20,8 +20,19 @@ FINE_LAT = ("bh_sideline", "bh_inner", "fh_inner", "fh_sideline")
 
 
 def synthetic_strokes(
-    rallies_per_game: int = 60, games: int = 2, plant: float = 0.6, seed: int = 0
+    rallies_per_game: int = 60,
+    games: int = 2,
+    plant: float = 0.6,
+    habit: float = 0.9,
+    opening: float = 0.5,
+    seed: int = 0,
 ) -> pd.DataFrame:
+    """Three planted regularities for player X (everything else is uniform noise):
+    * danger: when X loses, with prob `plant` the last opponent stroke among the final two is a
+      push/rush to X's rear backhand;
+    * habit: X answers an incoming smash with a defensive return with prob `habit`;
+    * opening: when X serves, with prob `opening` the rally starts short serve > net > lob.
+    """
     rng = np.random.default_rng(seed)
     rows = []
     for mi, (a, b) in enumerate(MATCHES):
@@ -36,6 +47,11 @@ def synthetic_strokes(
                 winner = a if rng.random() < 0.5 else b
                 shots = ["short_service"] + list(rng.choice(SHOTS, n - 1))
                 zones = list(rng.choice(ZONES, n))
+                if server == "X" and n >= 3 and rng.random() < opening:
+                    shots[1], shots[2] = "net", "lob"
+                for i in range(1, n):
+                    if hitters[i] == "X" and shots[i - 1] == "smash" and rng.random() < habit:
+                        shots[i] = "defensive"
                 if "X" in (a, b) and winner != "X" and rng.random() < plant:
                     # last stroke hit by the opponent among the final two strokes
                     for i in (n - 1, n - 2):
