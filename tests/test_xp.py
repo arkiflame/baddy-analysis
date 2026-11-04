@@ -5,8 +5,7 @@ import pytest
 
 from tactics import xp
 from tactics.config import load_zone_config
-from tactics.zones import annotate
-from tests.synthetic import synthetic_strokes
+from tests.synthetic import synthetic_annotated
 
 
 @pytest.fixture(scope="module")
@@ -16,16 +15,7 @@ def cfg():
 
 @pytest.fixture(scope="module")
 def df(cfg):
-    d = synthetic_strokes(rallies_per_game=50)
-    # the synthetic table has no landing data; give annotate what it needs
-    d["land_x"] = d.recv_x + np.random.default_rng(1).normal(0, 0.8, len(d))
-    d["land_y"] = d.recv_y + np.random.default_rng(2).normal(0, 0.8, len(d))
-    d["hit_x"], d["hit_y"] = d.hitter_x, d.hitter_y
-    d["backhand"] = False
-    d["aroundhead"] = False
-    d["hit_height"] = 2.0
-    d["lose_reason"] = None
-    return annotate(d, cfg)
+    return synthetic_annotated()
 
 
 def test_feature_frame_is_leak_free_by_construction(df, cfg):

@@ -186,3 +186,11 @@ Means carry t-intervals and differences Welch intervals.
 * xP added keeps the model's value of the final stroke as the terminal state (not the realised
   point), so it measures what the model believed, not hindsight; with a chance-level model it is
   small by construction and labelled as such.
+
+### D24. No live advantage bar: the state-feature experiment failed its pre-set bar
+Pass condition was live-prefix AUC >= 0.60 on the holdout. Logistic regression with the last
+two strokes' state reached 0.498, the GRU with state per stroke 0.491 (0.488 regularised).
+Per the brief, the result is reported in `docs/M3_BASELINE.md` and the bar is not built; the
+report's momentum view is xP per shot. The code stays (`src/tactics/live_state.py`,
+`scripts/live_state.py`) so the experiment can be re-run when richer per-stroke features exist
+(shuttle speed, timing, contact height in metres).

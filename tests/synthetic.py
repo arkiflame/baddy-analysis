@@ -108,3 +108,21 @@ def synthetic_strokes(
     for c in ("hitter", "receiver", "rally_winner", "shot", "shot_coarse", "coach_zone"):
         df[c] = df[c].astype("category")
     return df
+
+
+def synthetic_annotated(rallies_per_game: int = 50, seed: int = 0):
+    """The synthetic table with the landing / contact columns the zone annotation needs, run
+    through zones.annotate, for modules that consume the annotated frame (xP, live state)."""
+    from tactics.config import load_zone_config
+    from tactics.zones import annotate
+
+    d = synthetic_strokes(rallies_per_game=rallies_per_game, seed=seed)
+    rng = np.random.default_rng(seed + 1)
+    d["land_x"] = d.recv_x + rng.normal(0, 0.8, len(d))
+    d["land_y"] = d.recv_y + rng.normal(0, 0.8, len(d))
+    d["hit_x"], d["hit_y"] = d.hitter_x, d.hitter_y
+    d["backhand"] = False
+    d["aroundhead"] = False
+    d["hit_height"] = 2.0
+    d["lose_reason"] = None
+    return annotate(d, load_zone_config())

@@ -113,3 +113,41 @@ item.
 - `scripts/m3_baseline.py` (seeds 0, 1, 2; `--seeds` to change; `--cpu` to run without a GPU).
 - Raw per-seed table and validation curves: `outputs/m3/results.md`, `outputs/m3/results.json`.
 - Code: `src/tactics/outcome_model.py`.
+
+## Live advantage experiment (Phase 3 E): FAIL
+
+Question: does per-stroke **state** (both players' positions, each player's distance from their
+own base position, how far the receiver moved since their last hit and over the hit before, how
+far the hitter moved since their last hit, stroke index) give the live setting signal that shot /
+zone tokens alone do not? Pass condition, fixed before running: live-prefix AUC >= 0.60 on the 14
+holdout matches. Code: `src/tactics/live_state.py`; commands and full tables in
+`outputs/m3/live_state.md` and `outputs/m3/live_state_reg.md`.
+
+```
+uv run python scripts/live_state.py                                   # GRU hidden 64, dropout 0.2, lr 2e-3
+uv run python scripts/live_state.py --hidden 32 --dropout 0.5 --lr 0.0005 --tag _reg
+```
+
+Same split as above (train 4,258 rallies / 42,161 live prefixes, validation 645 rallies,
+holdout 1,110 rallies / 10,495 prefixes), receiver and hitter bases from development matches
+only, state features standardised on the training set, three GRU seeds, RTX 3070 Ti, about one
+minute per run.
+
+| model (holdout, all live prefixes, n = 10,495) | accuracy | log loss | Brier | AUC |
+|---|---|---|---|---|
+| base rate | 0.482 | 0.694 | 0.250 | 0.500 |
+| logistic: bag of tokens + state of the last two strokes | 0.492 | 0.710 | 0.258 | **0.498** |
+| GRU: token embedding + state per stroke (mean of 3 seeds) | 0.504 | 0.701 | 0.254 | **0.491** |
+| GRU, regularised (hidden 32, dropout 0.5, lr 5e-4; mean of 3 seeds) | 0.496 | 0.696 | 0.251 | **0.488** |
+
+At fixed prefix lengths k = 2, 4, 6 every model sits between AUC 0.47 and 0.51, and on the
+longest legal prefix (n-1) the logistic reaches 0.53, the GRU 0.48. In the default run the GRU's
+validation log loss rose from epoch 2 onward (0.70 -> 2.08 by epoch 6), i.e. the state features
+let it memorise training rallies without generalising; the regularised run removed the
+overfitting and did not add signal.
+
+**Verdict: FAIL (best live AUC 0.498 < 0.60).** No live advantage bar is built (DECISIONS D24).
+This matches the xP result (`docs/XP.md`): with ShuttleSet's per-stroke information, the state
+of a professional singles rally in progress does not predict its winner; the information
+arrives with the decisive stroke. The "momentum" view in the player report is therefore xP per
+shot (points above expectation and the Finishing table), not a live bar.
