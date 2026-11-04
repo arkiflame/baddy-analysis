@@ -142,3 +142,16 @@ coach sections ("how to play against", "what to fix") therefore draw only from t
 splits remain in the report as a descriptive section with their own typical-pro comparison.
 Shots of unknown type are excluded from the danger tables.
 
+### D21. Position maps: own-half frame, not mirrored for handedness, axis labelled FH/BH
+Positions are expressed as metres from the net into the player's half and metres from the
+centre line toward the player's own RIGHT. They are not mirrored for left-handers because base
+position is about court geometry (the centre line, the service lines); instead the figure and
+the text label the lateral axis with the player's forehand and backhand side from
+config/players.toml, so "pulled to the backhand" reads correctly for every player. The frame
+also provides `lat_fh` for anyone who wants the mirrored view. Everything is named "position
+map", never "footwork", because ShuttleSet has positions only at hit time; the distance per
+rally is the straight line between consecutive own-hit positions and is reported as a lower
+bound. Base position = median receive position when the opponent hits a non-serve stroke;
+"pull" = distance from that base to where the reply was hit, by the opponent's shot type.
+Means carry t-intervals and differences Welch intervals.
+

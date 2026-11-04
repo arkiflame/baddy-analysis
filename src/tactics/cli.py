@@ -54,14 +54,26 @@ def cmd_players(args) -> int:
 
 
 def cmd_report(args) -> int:
+    from tactics import positions
     from tactics.analyses import analyse_player
-    from tactics.report import write_report
+    from tactics.report import slug, surname, write_report
 
     df = _load()
     s = _settings(args)
+    zcfg = load_zone_config()
     rep = analyse_player(df, args.player, s)
     command = "python -m tactics " + " ".join(shlex.quote(a) for a in sys.argv[1:])
-    path = write_report(rep, Path(args.out), s, load_zone_config(), load_player_config(), command)
+    out_dir = Path(args.out)
+    extra: list[str] = []
+    if not args.no_positions:
+        summary = positions.summarise(df, args.player, zcfg, s)
+        img = positions.position_heatmap(
+            summary, zcfg, out_dir / f"{slug(args.player)}_img" / "positions.png"
+        )
+        extra += positions.section(
+            summary, surname(args.player), img.relative_to(out_dir).as_posix(), s
+        )
+    path = write_report(rep, out_dir, s, zcfg, load_player_config(), command, extra)
     print(f"wrote {path}")
     return 0
 
@@ -123,6 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--player", required=True, help='player name as in the dataset, e.g. "Viktor AXELSEN"'
     )
     sp.add_argument("--out", default=str(OUTPUTS), help="output directory (default outputs/)")
+    sp.add_argument("--no-positions", action="store_true", help="skip the position-map section")
     common(sp)
     sp.set_defaults(func=cmd_report)
 

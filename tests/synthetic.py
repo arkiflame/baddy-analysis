@@ -42,9 +42,14 @@ def synthetic_strokes(
                         if i >= 1 and hitters[i] != "X":
                             shots[i], zones[i] = "push_rush", "rear_bh"
                             break
+                server_near = rng.random() < 0.5
                 for i in range(n):
                     h = hitters[i]
                     r = other if h == server else server
+                    h_near = server_near if h == server else not server_near
+                    # feet positions: each player somewhere in their own half
+                    hx, hd = rng.uniform(0.8, 5.3), rng.uniform(1.0, 6.2)
+                    rx, rd = rng.uniform(0.8, 5.3), rng.uniform(2.5, 4.5)
                     rows.append(
                         {
                             "dataset": "syn",
@@ -61,6 +66,11 @@ def synthetic_strokes(
                             "receiver": r,
                             "hitter_handed": "right",
                             "receiver_handed": "right",
+                            "hitter_half": "near" if h_near else "far",
+                            "hitter_x": hx,
+                            "hitter_y": 6.7 + hd if h_near else 6.7 - hd,
+                            "recv_x": rx,
+                            "recv_y": 6.7 - rd if h_near else 6.7 + rd,
                             "shot": shots[i],
                             "shot_coarse": shots[i],
                             "coach_zone": zones[i],

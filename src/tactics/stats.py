@@ -151,3 +151,41 @@ def compare_to_reference(
         out.delta_excludes_zero, np.minimum(out.delta_lo.abs(), out.delta_hi.abs()), 0.0
     )
     return out
+
+
+# ---------------------------------------------------------------------------------------
+# Means (position maps use distances, not rates)
+# ---------------------------------------------------------------------------------------
+
+
+def mean_ci(x, z: float = Z95) -> tuple[float, float, float]:
+    """(mean, lo, hi) with a t-interval; (nan, nan, nan) below 2 observations."""
+    from scipy import stats as sps
+
+    x = np.asarray(x, dtype=float)
+    x = x[~np.isnan(x)]
+    n = len(x)
+    if n < 2:
+        return (float(x.mean()) if n else float("nan"), float("nan"), float("nan"))
+    m, se = float(x.mean()), float(x.std(ddof=1) / np.sqrt(n))
+    t = float(sps.t.ppf(0.5 + 0.5 * (2 * sps.norm.cdf(z) - 1), n - 1))
+    return m, m - t * se, m + t * se
+
+
+def welch_diff_ci(a, b, z: float = Z95) -> tuple[float, float, float]:
+    """(mean(a) - mean(b), lo, hi) by Welch's t-interval for unequal variances."""
+    from scipy import stats as sps
+
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    a, b = a[~np.isnan(a)], b[~np.isnan(b)]
+    if len(a) < 2 or len(b) < 2:
+        return float("nan"), float("nan"), float("nan")
+    va, vb = a.var(ddof=1) / len(a), b.var(ddof=1) / len(b)
+    d = float(a.mean() - b.mean())
+    se = float(np.sqrt(va + vb))
+    if se == 0:
+        return d, d, d
+    dof = (va + vb) ** 2 / (va**2 / (len(a) - 1) + vb**2 / (len(b) - 1))
+    t = float(sps.t.ppf(0.5 + 0.5 * (2 * sps.norm.cdf(z) - 1), dof))
+    return d, d - t * se, d + t * se

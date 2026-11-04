@@ -187,6 +187,50 @@ Shots Axelsen plays:
 | defensive -> front_fh   |  34 | 12%             | 5%-27%   | 9% (n=354)     | +3 (-5 to +18)        |        |
 | defensive -> mid_fh     |  34 | 12%             | 5%-27%   | 16% (n=268)    | -5 (-13 to +11)       |        |
 
+## Position maps (positions at hit time only)
+
+ShuttleSet records where each player stands only at the instant a stroke is hit, so these are position maps, not footwork paths, and every distance below is a lower bound (the straight line between consecutive own-hit positions). Positions are in the player's own half: metres from the net and metres from the centre line toward the player's own right; the lateral axis is labelled with Axelsen's forehand and backhand side from config/players.toml.
+
+![Axelsen: position maps](Viktor_AXELSEN_img/positions.png)
+
+**Base position** (median position when the opponent hits a non-serve stroke, n=7230): 3.82 m from the net, 0.28 m toward the forehand side (interquartile range 3.36-4.35 m deep, -0.22 to +0.68 m lateral). Typical pros: median of the 42 other players' bases 3.72 m from the net (players range 3.27-4.40 m), 0.15 m from the centre line.
+
+**Pulled from base, by the opponent's shot** (distance between Axelsen's base and where Axelsen played the reply; serves and serve returns excluded):
+
+| opponent's shot   | n    | mean m   | 95% CI    | typical pros   | difference (95% CI)    | flag   |
+|:------------------|:-----|:---------|:----------|:---------------|:-----------------------|:-------|
+| net               | 1690 | 2.21     | 2.18-2.24 | 2.29 (n=13555) | -0.08 (-0.11 to -0.05) | signal |
+| defensive         | 908  | 1.67     | 1.63-1.71 | 1.65 (n=8248)  | +0.02 (-0.03 to +0.06) |        |
+| lob               | 903  | 2.20     | 2.16-2.24 | 2.24 (n=11533) | -0.04 (-0.08 to +0.00) |        |
+| drop              | 886  | 1.50     | 1.46-1.53 | 1.64 (n=6298)  | -0.14 (-0.18 to -0.10) | signal |
+| smash             | 882  | 0.82     | 0.79-0.85 | 0.83 (n=7002)  | -0.01 (-0.04 to +0.02) |        |
+| clear             | 513  | 2.27     | 2.22-2.32 | 2.05 (n=6299)  | +0.22 (+0.17 to +0.27) | signal |
+| push_rush         | 442  | 1.22     | 1.15-1.30 | 1.62 (n=4644)  | -0.39 (-0.47 to -0.32) | signal |
+| drive             | 259  | 0.82     | 0.76-0.88 | 0.85 (n=2099)  | -0.03 (-0.09 to +0.04) |        |
+| all shots         | 6629 | 1.73     | 1.71-1.75 | 1.82 (n=61094) | -0.09 (-0.11 to -0.07) | signal |
+
+**Distance per rally** (sum of straight lines between Axelsen's consecutive hit positions, a lower bound), split by game and by score pressure (18+):
+
+| rallies     | n    | mean m   | 95% CI      | typical pros    | difference (95% CI)    | flag   |
+|:------------|:-----|:---------|:------------|:----------------|:-----------------------|:-------|
+| all rallies | 1377 | 11.29    | 10.62-11.97 | 11.04 (n=13743) | +0.26 (-0.44 to +0.95) |        |
+| game 1      | 611  | 11.75    | 10.75-12.75 | 11.09 (n=5907)  | +0.65 (-0.39 to +1.70) |        |
+| game 2      | 587  | 11.28    | 10.19-12.37 | 10.69 (n=5555)  | +0.59 (-0.54 to +1.72) |        |
+| game 3      | 179  | 9.80     | 8.34-11.27  | 11.75 (n=2281)  | -1.95 (-3.49 to -0.40) | signal |
+| at 18+      | 210  | 10.04    | 8.52-11.56  | 10.69 (n=2094)  | -0.65 (-2.24 to +0.94) |        |
+| before 18   | 1167 | 11.52    | 10.78-12.26 | 11.10 (n=11649) | +0.42 (-0.35 to +1.19) |        |
+
+Per own stroke (controls for rally length):
+
+| per own hit   | n    | mean m   | 95% CI    | typical pros   | difference (95% CI)    | flag   |
+|:--------------|:-----|:---------|:----------|:---------------|:-----------------------|:-------|
+| all rallies   | 1377 | 1.58     | 1.53-1.62 | 1.70 (n=13743) | -0.12 (-0.17 to -0.07) | signal |
+| game 1        | 611  | 1.63     | 1.55-1.70 | 1.70 (n=5907)  | -0.08 (-0.15 to -0.00) | signal |
+| game 2        | 587  | 1.55     | 1.47-1.62 | 1.68 (n=5555)  | -0.13 (-0.21 to -0.06) | signal |
+| game 3        | 179  | 1.51     | 1.38-1.64 | 1.72 (n=2281)  | -0.21 (-0.34 to -0.07) | signal |
+| at 18+        | 210  | 1.55     | 1.42-1.68 | 1.65 (n=2094)  | -0.11 (-0.24 to +0.03) |        |
+| before 18     | 1167 | 1.58     | 1.53-1.63 | 1.70 (n=11649) | -0.12 (-0.18 to -0.07) | signal |
+
 ## Context (descriptive, not ranked)
 
 ### How points end

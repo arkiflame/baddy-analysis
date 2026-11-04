@@ -99,6 +99,10 @@ def zone_words(zone: str) -> str:
     return f"{depth} {'forehand' if side == 'fh' else 'backhand'}"
 
 
+def slug(player: str) -> str:
+    return player.replace(" ", "_").replace(".", "")
+
+
 def surname(player: str) -> str:
     # The dataset writes family names in capitals ("CHOU Tien Chen", "Kento MOMOTA"). The one
     # name without capitals, "An Se Young", is Korean: family name first.
@@ -453,8 +457,8 @@ def write_report(
     extra_sections: list[str] | None = None,
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
-    slug = rep.player.replace(" ", "_").replace(".", "")
-    path = out_dir / f"{slug}.md"
+    name = slug(rep.player)
+    path = out_dir / f"{name}.md"
     r, ps = rep.rallies, rep.strokes
     me = surname(rep.player)
     top = top_insights(rep)
@@ -609,7 +613,7 @@ def write_report(
             L.append(md_table(T[f"length@{split_name}"], "length_bin", "strokes", ref_name=own))
 
     L.append("### Where the shuttle goes (landing heatmaps)\n")
-    img_dir = out_dir / f"{slug}_img"
+    img_dir = out_dir / f"{name}_img"
     for tag, mask, title in (
         ("plays", ps.player_hit, f"Where {me} sends the shuttle"),
         ("faces", ~ps.player_hit, f"Where opponents send {me}"),
