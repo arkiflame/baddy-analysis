@@ -329,14 +329,14 @@ def fix_bullet(row: pd.Series, player: str, s: AnalysisSettings) -> str:
     return f"**{head}.** {body[0].upper() + body[1:]}, {_ref_clause(row)}."
 
 
-def coach_sections(
+def coach_rows(
     rep: PlayerReport, s: AnalysisSettings, k: int = 6, per_family: int = 2
-) -> tuple[list[str], list[str]]:
-    """Bullets for the two coach sections, best-supported first.
+) -> tuple[list[pd.Series], list[pd.Series]]:
+    """The insight rows behind the two coach sections, best-supported first.
 
     'How to play against': the player's weaknesses first (loses more than typical pros), then
     the strengths an opponent should stop feeding, at most k lines and per_family per table.
-    'What to fix': the weaknesses only.
+    'What to fix': the weaknesses only. Returns (weak, strong).
     """
     cand = rep.insights
     cand = cand[cand.candidate]
@@ -354,6 +354,14 @@ def coach_sections(
 
     weak = pick(cand[cand.delta > 0], k)
     strong = pick(cand[cand.delta < 0], max(k - len(weak), k // 2))
+    return weak, strong
+
+
+def coach_sections(
+    rep: PlayerReport, s: AnalysisSettings, k: int = 6, per_family: int = 2
+) -> tuple[list[str], list[str]]:
+    """Bullets for the two coach sections (see coach_rows)."""
+    weak, strong = coach_rows(rep, s, k, per_family)
     against = [against_bullet(r, rep.player, s) for r in (weak + strong)[:k]]
     fix = [fix_bullet(r, rep.player, s) for r in weak]
     return against, fix
