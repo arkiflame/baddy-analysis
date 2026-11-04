@@ -79,7 +79,7 @@ use it when present; xP runs on the CPU in seconds).
 ```powershell
 uv sync --extra dev                         # core: pandas, numpy, scipy, matplotlib
 uv run python scripts/fetch_shuttleset.py   # ShuttleSet + ShuttleSet22 -> data/raw/ (MIT)
-uv run pytest                               # 70 tests
+uv run pytest                               # 72 tests
 # optional
 uv sync --extra dev --extra m3 --extra video   # torch (CUDA 12.8 wheels), scikit-learn, opencv
 uv run python scripts/fetch_tracknetv3.py      # TrackNetV3 source + weights (MIT, checksummed)
@@ -109,7 +109,7 @@ scripts/         fetch_*.py, zone_diagnostics.py, m3_baseline.py, xp_baseline.py
                  threshold_sensitivity.py
 docs/            DATASET.md, DECISIONS.md (D1-D26), EVALUATION.md, XP.md, M3_BASELINE.md,
                  ROADMAP.md, WALKTHROUGH.md (modules, 20 interview questions)
-tests/           70 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
+tests/           72 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
                  synthetic games, analyses / report / positions / habits / xp / evaluation on a
                  synthetic table with planted patterns, tools, TrackNet
 ```
