@@ -81,3 +81,32 @@ Candidates must have n >= 30 and a 95% Wilson interval that excludes the baselin
 ### D14. Holdout = ShuttleSet22's published validation + test match ids
 14 matches (ids 38-40, 46-50, 52-57 of ShuttleSet22). Chosen by the dataset authors before we
 ran anything. Axelsen has 2 matches in it (`tactics players` prints the count per player).
+
+### D15. M3 is reported in three settings, not one
+The first run trained on all prefixes and evaluated by slice, and every model sat at chance
+(AUC 0.50-0.54). A diagnostic showed why: the strongest signal in pro singles is parity, "the
+player who hit the stroke before the decisive one wins 65%", and a model that does not know the
+rally is about to end cannot use it. So the experiment now reports (a) **live**: all prefixes,
+the rally end unknown; (b) **pre-final**: the n-1 strokes before the decisive stroke; (c)
+**full, final zone masked**: all n strokes with the last stroke's landing zone hidden, the
+closest honest analogue of the Shot Influence paper's input. Each setting has base-rate and
+"last hitter wins" heuristics next to the models.
+
+### D16. Lint policy: format at 100 columns, flag only lines over 120
+`ruff format` wraps code at 100; the remaining long lines were report sentences in f-strings,
+which read worse when split. `max-line-length = 120` in pyproject keeps E501 meaningful.
+
+### D17. TrackNetV3: import only `model.py`, re-implement preprocessing and decoding
+The upstream `predict.py` pulls in `test.py` (pycocotools), `dataset.py` (parse) and torch 1.10
+pins. The network class is pure PyTorch, so the wrapper imports just that and mirrors the 40
+lines of preprocessing (median background, 288x512 resize, channel stacking) and heatmap
+decoding (largest contour centre). Verified end to end on a synthetic clip: 28/48 frames
+detected, median error 2.4 px, 100% within 15 px (`tests/test_tracknet.py`).
+
+### D18. Two early commits still carry a `Co-Authored-By: Claude` trailer — REVIEW
+Stripping it needs a history rewrite and a force-push, which the session's safety rules blocked.
+Every later commit is trailer-free. To clean the first two (safe: private repo, no other
+contributors):
+
+    git filter-branch -f --msg-filter 'grep -v Co-Authored-By' -- main overnight-1
+    git push --force origin main overnight-1

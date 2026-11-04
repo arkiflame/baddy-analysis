@@ -47,7 +47,9 @@ def test_hits_landing_and_score_follow_shuttleset_conventions():
 
 def test_second_rally_and_undo():
     s = LabelSession(video="v.mp4", fps=25.0)
-    s.add_hit(1); s.set_shot("1"); s.end_rally("B")
+    s.add_hit(1)
+    s.set_shot("1")
+    s.end_rally("B")
     assert s.score == (0, 1) and s.current_player == "B"
     s.add_hit(50)                    # B serves rally 2
     s.add_hit(60)                    # A
@@ -62,7 +64,9 @@ def test_second_rally_and_undo():
 def test_session_round_trips_through_json():
     s = LabelSession(video="v.mp4", fps=30.0)
     s.click(3, 1.5, 2.5)
-    s.add_hit(3); s.set_shot("3"); s.set_position("hitter", 5, 6)
+    s.add_hit(3)
+    s.set_shot("3")
+    s.set_position("hitter", 5, 6)
     s.end_rally("A")
     s.add_hit(9)
     t = LabelSession.from_json(s.to_json())

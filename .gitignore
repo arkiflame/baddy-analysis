@@ -35,3 +35,6 @@ outputs/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Third-party checkouts (TrackNetV3 source, fetched by scripts/fetch_tracknetv3.py)
+third_party/
