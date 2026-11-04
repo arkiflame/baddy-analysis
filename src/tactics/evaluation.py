@@ -230,7 +230,9 @@ def result_markdown(res: ReplicationResult) -> str:
         return "\n".join(L)
     for i, r in res.table.iterrows():
         L.append(f"{i + 1}. **{r.verdict}** - {r.claim}")
-        if r.test_n:
+        if r.verdict == "UNTESTABLE" and r.test_n:
+            line = f"   - out of sample: only {int(r.test_n)} instances (fewer than 10)"
+        elif r.test_n:
             line = (
                 f"   - out of sample: {r.test_rate:.0%} (95% CI {r.test_lo:.0%}-{r.test_hi:.0%}, n={int(r.test_n)}) "
                 f"vs typical pros {r.ref_rate:.0%}; difference {r.test_delta * 100:+.0f} "

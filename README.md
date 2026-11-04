@@ -1,10 +1,11 @@
 # badminton-tactics
 
 A badminton **tactical analyzer**: it finds the rally patterns that win and lose points for a
-player, the kind of insight a coach gives, rather than shot counts. Milestone 1 works on 94
-professional singles matches (ShuttleSet + ShuttleSet22, 87k annotated strokes) and produces a
-per-player Markdown report whose claims carry sample sizes and confidence intervals and are
-re-tested on held-out matches.
+player, the kind of insight a coach gives, rather than shot counts. It works on 94 professional
+singles matches (ShuttleSet + ShuttleSet22, 81,939 annotated strokes) and produces a per-player
+Markdown report whose claims compare the player with every other pro in the same situation,
+carry sample sizes and confidence intervals, and are re-tested on matches that were not used to
+find them.
 
 Perception (shuttle tracking, shot classification) is reused from open-source work with credit;
 the effort here goes into the tactics layer.
@@ -12,59 +13,74 @@ the effort here goes into the tactics layer.
 ## What it does today
 
 ```
-uv run python -m tactics players                       # coverage per player
-uv run python -m tactics report --player "Viktor AXELSEN"   # -> outputs/Viktor_AXELSEN.md
-uv run python -m tactics evaluate --player "Viktor AXELSEN" --player "An Se Young"
-uv run python -m tactics zones-check                   # evidence behind the zone thresholds
+uv run python -m tactics players                             # coverage per player
+uv run python -m tactics report --player "Viktor AXELSEN"    # -> outputs/Viktor_AXELSEN.md (+ PNGs)
+uv run python -m tactics evaluate --player "Viktor AXELSEN"  # holdout / leave-one-match-out / leave-one-opponent-out
+uv run python -m tactics zones-check                         # evidence behind the zone thresholds
 ```
 
-A report contains the player's top-5 insights in plain language, then every table behind them:
-win rate by rally length, by the two or three strokes before the point was decided, "danger
-conditions" (shot type x court zone that lead to losing the point within two shots, both for
-shots the player hits and shots they face), splits by game number and late-game pressure, how
-points end, and fine-grid heatmaps. Example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSEN.md).
+A report (example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSEN.md)) contains:
+
+- **Top insights**: the shot-and-zone situations where the player differs most from typical
+  pros, ranked by the smallest difference the data still supports.
+- **How to play against the player** and **what the player should fix**, in coach language.
+- **The evidence**: every danger table (P(point lost within two shots | shot type x zone), for
+  shots faced and shots played) with the typical-pro rate and the difference's 95% interval.
+- **Position maps** (positions at hit time only): heatmaps on a court drawn to scale, base
+  position, how far each opponent shot pulls the player from it, distance per rally as a lower bound.
+- **Habits and set plays**: replies chosen more often than typical pros in the same situation,
+  the most predictable situations (entropy), distinctive openings with their win rates.
+- **Expected points (xP)**: points above expectation per shot and court band, with the honest
+  caveat that mid-rally xP is at chance in this data, and a finishing table where it is not.
+- **Context**: how points end, the setups before the decisive stroke, rally length and splits.
 
 Zones are computed from the **receiver's** point of view with a per-player handedness table, so
 "rear backhand" means the receiver's backhand corner. Every threshold lives in `config/zones.toml`.
 
 ## Results (all numbers from commands in this repo, 2026-11-04)
 
-Top insights for Viktor Axelsen (20 matches, 1,394 rallies, 58.1% rally win rate), from
-`python -m tactics report --player "Viktor AXELSEN"`:
+**Viktor Axelsen** (20 matches, 1,394 rallies, 58.1% rally win rate), `python -m tactics report --player "Viktor AXELSEN"`:
 
-1. After opponents' pushes/rushes, Axelsen loses the point within 2 shots 21% of the time (95% CI 18-25%, n=495) vs an 11% baseline for shots he faces.
-2. After opponents' smashes: 18% (16-21%, n=967) vs 11%.
-3. When the point is decided right after an Axelsen lob followed by an opponent smash, he wins 11% (5-26%, n=35) vs 58% overall.
-4. When the point is decided right after an opponent lob followed by an Axelsen smash, he wins 94% (83-98%, n=48) vs 58%.
-5. After opponents' pushes/rushes to his rear backhand: 35% (25-45%, n=81) vs 11%.
+1. Opponents' shots to his body: he loses within two shots 7% of the time (n=97, 95% CI 4-14%); typical pros lose 20% (difference -13 points, CI -18 to -5).
+2. Opponents' net shots to his front forehand: 7% (n=751) vs 14% (-7, CI -8 to -4).
+3. Opponents' smashes to his mid forehand: 16% (n=472) vs 23% (-7, CI -11 to -4).
+4. In game 3, opponents' clears: 24% (n=46) vs 11% (+13, CI +3 to +28).
+5. Anything he plays to the opponent's mid forehand: 6% (n=1,342) vs 10% (-4, CI -5 to -2).
 
-Holdout replication (`docs/EVALUATION.md`): on 14 held-out matches chosen by the dataset authors,
-**13 of 14 testable top-5 insights replicated** across five players (same direction, overlapping
-95% intervals), 1 failed, and 11 were untestable because the pattern occurred fewer than 10 times
-in the holdout.
+The one weakness that survives the tests at all game stages: pushes and rushes to his rear
+backhand, 35% (n=81) vs 23% for typical pros (+11, CI +2 to +23).
 
-Rally-outcome prediction baseline (`docs/M3_BASELINE.md`, 14 holdout matches, 1,110 rallies,
-match-level split): while a rally is in progress neither logistic regression nor a GRU beats the
-base rate (AUC 0.50-0.52); given that the next shot decides the point, "last hitter wins" gets
-65.7% accuracy and the models reach AUC 0.73; with the final stroke visible but its landing zone
-masked, the GRU reaches accuracy 0.747, AUC 0.815, Brier 0.175.
+| Feature | Verified result |
+|---|---|
+| Replication, 5 players x 5 insights (`docs/EVALUATION.md`) | leave-one-match-out: 8 replicate, 16 same direction, 1 fail; leave-one-opponent-out: 7 / 13 / 2 (+3 untestable); holdout (1-3 matches per player): 1 / 8 / 6 (+10 untestable) |
+| Threshold sensitivity (`outputs/sensitivity.md`) | front/mid at 2.5 m keeps 22 of 25 top-5 insights; body radius 0.75 m keeps 16 of 25 |
+| Position maps (Axelsen) | base position 3.82 m from the net; pulled 1.22 m from base by pushes vs 1.62 m for typical pros (-0.39, CI -0.47 to -0.32); 1.58 m per own stroke vs 1.70 m |
+| Habits (Axelsen) | smashes 75% of clears to his rear backhand vs 37% for typical pros (+38, CI +31 to +44); reply entropy there 2.18 bits vs 3.11 for typical pros at the same n; opens short serve > net > lob in 32% of service rallies vs 19% |
+| xP (`docs/XP.md`) | holdout AUC 0.50 on non-final strokes (both feature sets, both model families), 0.79 on final strokes; leak check with the final zone visible 0.986; Axelsen's finishing smashes +0.104 points above typical pros' (CI +0.039 to +0.168) |
+| Live advantage experiment (`docs/M3_BASELINE.md`) | FAIL: best live-prefix AUC 0.498 vs the 0.60 bar; no bar built |
+| M3 baseline (`docs/M3_BASELINE.md`) | live AUC 0.50-0.52; pre-final logistic AUC 0.730; full rally with the final zone masked GRU AUC 0.815 |
+| Shuttle tracking (M2 tooling) | TrackNetV3 wrapper detects a synthetic shuttle in 28 of 48 frames, median error 2.4 px |
 
-Shuttle tracking (Milestone 2 tooling): the TrackNetV3 wrapper detects a synthetic shuttle in
-28 of 48 frames with a median error of 2.4 px (`tests/test_tracknet.py`). No real footage yet.
+Two negative results are part of the deliverable: with ShuttleSet's per-stroke information a
+professional singles rally in progress does not reveal its winner, with or without position and
+movement features. Both are documented with the commands that show it.
 
 ## Setup
 
 Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), git. GPU optional (M3 and tracking
-use it when present).
+use it when present; xP runs on the CPU in seconds).
 
 ```powershell
 uv sync --extra dev                         # core: pandas, numpy, scipy, matplotlib
 uv run python scripts/fetch_shuttleset.py   # ShuttleSet + ShuttleSet22 -> data/raw/ (MIT)
-uv run pytest                               # 39 tests
+uv run pytest                               # 70 tests
 # optional
 uv sync --extra dev --extra m3 --extra video   # torch (CUDA 12.8 wheels), scikit-learn, opencv
 uv run python scripts/fetch_tracknetv3.py      # TrackNetV3 source + weights (MIT, checksummed)
-uv run python scripts/m3_baseline.py           # rally-outcome models
+uv run python scripts/xp_baseline.py           # xP models, holdout metrics, calibration plot
+uv run python scripts/m3_baseline.py           # rally-outcome sequence models
+uv run python scripts/live_state.py            # live advantage experiment
+uv run python scripts/threshold_sensitivity.py # top-5 under alternative zone thresholds
 ```
 
 ## Layout
@@ -74,20 +90,26 @@ src/tactics/
   loader.py      ShuttleSet CSVs -> Match/Game/Rally/Stroke + flat table (projection, sides, scores)
   court.py       pixel -> metre projection, player-relative frames
   zones.py       receiver-relative coach zones, fine grid, movement features
-  stats.py       Wilson CIs, shrinkage, rate tables
-  analyses.py    per-player analyses              report.py     Markdown report + heatmaps
-  evaluation.py  holdout replication              splits.py     match-level holdout ids
-  outcome_model.py  M3 sequence models            cli.py        the four commands
+  stats.py       Wilson CI, Newcombe CI on a difference, rate tables, t / Welch intervals
+  analyses.py    per-player analyses + the same for all other players (typical pros)
+  report.py      top-5, coach sections, tables, heatmaps
+  positions.py   position maps          habits.py       habits, entropy, set plays
+  xp.py          expected points        live_state.py   live advantage experiment
+  evaluation.py  three replication schemes            splits.py   match-level holdout ids
+  outcome_model.py  M3 sequence models  cli.py          the four commands
   tools/         court calibration, video labeller, TrackNetV3 wrapper (M2)
 config/          zones.toml (thresholds), players.toml (handedness with sources)
-scripts/         fetch_shuttleset.py, fetch_tracknetv3.py, zone_diagnostics.py, m3_baseline.py
-docs/            DATASET.md, DECISIONS.md, EVALUATION.md, M3_BASELINE.md, ROADMAP.md, WALKTHROUGH.md
-tests/           39 tests: geometry, zones at the boundaries, stats, loader on synthetic games
-               (score correction, de-dup, placeholder rallies, change of ends at 11), tools
+scripts/         fetch_*.py, zone_diagnostics.py, m3_baseline.py, xp_baseline.py, live_state.py,
+                 threshold_sensitivity.py
+docs/            DATASET.md, DECISIONS.md (D1-D26), EVALUATION.md, XP.md, M3_BASELINE.md,
+                 ROADMAP.md, WALKTHROUGH.md (modules, 20 interview questions)
+tests/           70 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
+                 synthetic games, analyses / report / positions / habits / xp / evaluation on a
+                 synthetic table with planted patterns, tools, TrackNet
 ```
 
 `docs/WALKTHROUGH.md` explains every module and the design decisions; `docs/DECISIONS.md` logs
-the choices made during the overnight build with their reasoning.
+the choices made during the builds with their reasoning.
 
 ## Roadmap
 

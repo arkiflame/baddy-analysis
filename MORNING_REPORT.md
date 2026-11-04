@@ -1,104 +1,133 @@
-# Morning report, overnight run of 2026-11-04 (branch `overnight-1`)
+# Morning report, Phase 3 run of 2026-11-04 (branch `features-v3`)
 
 Everything below was produced by code in this branch; each number names the command that made it.
-Nothing was pushed except to the private repo you asked for (github.com/arkiflame/badminton-tactics).
+The branch is pushed to the private repo (github.com/arkiflame/badminton-tactics) as a backup;
+nothing else was published. No Claude attribution anywhere in the history (D18 resolved, the two
+early trailers were stripped with your approval and `main` / `overnight-1` force-pushed).
 
-## What got done
+## What got done, in the order you set
 
-| Phase | State | Where to look |
+| Step | State | Where to look |
 |---|---|---|
-| 1 Milestone 1 core | done | `src/tactics/`, `python -m tactics report --player "Viktor AXELSEN"` |
-| 2 Evaluation | done, with failures reported | `docs/EVALUATION.md` |
-| 3 Tests and quality | done: 39 tests pass, ruff clean | `uv run pytest`, `uv run ruff check src tests scripts` |
-| 4 M3 baseline | done (2 min on the 3070 Ti) | `docs/M3_BASELINE.md`, `outputs/m3/` |
-| 5 M2 tooling | done, labeller/calibration tested without a display, TrackNetV3 proven on a synthetic clip | `src/tactics/tools/`, `tests/test_tools.py`, `tests/test_tracknet.py` |
-| 6 Docs | done | `README.md`, `docs/WALKTHROUGH.md` (15 interview questions), `docs/ROADMAP.md` |
+| 0 Strip trailers, rewrite history | done, verified with `git log --all --format='%h %(trailers:key=Co-Authored-By)'` | D18 |
+| A Population baseline | done | `stats.compare_to_reference`, `analyses.population_*`, D19 |
+| Phase 2 items 2-3: actionable top-5, two coach sections, wording | done | `report.py`, D20, `docs/examples/Viktor_AXELSEN.md` |
+| B Position maps | done | `positions.py`, D21, report section |
+| C Habits, predictability, set plays | done | `habits.py`, D22, report section |
+| D xP | done, with an honest negative core result | `xp.py`, `scripts/xp_baseline.py`, `docs/XP.md`, D23 |
+| E Live advantage bar | experiment run twice, **FAIL**, bar not built | `live_state.py`, `docs/M3_BASELINE.md`, D24 |
+| F Docs | done | `README.md`, `docs/WALKTHROUGH.md` (sections 6-7, questions 16-20), this file |
+| Phase 2 leftovers: leave-one-match-out / leave-one-opponent-out, threshold sensitivity | done | `evaluation.py`, `scripts/threshold_sensitivity.py`, `docs/EVALUATION.md`, D25, D26 |
 
-Commits on `overnight-1` beyond `main`: 4 (each passes the tests at its commit), plus the 2 scaffold commits on `main`.
+Tests: 70 pass (`uv run pytest`, 47 s); `ruff check src tests scripts` clean. Commits on
+`features-v3` beyond `overnight-1`: 8, each passing the tests at its commit.
 
 ## The real numbers
 
-Data (`uv run python -m tactics players`): 94 matches after de-duplicating the 8 matches
-ShuttleSet22 re-ships, 7,888 rallies loaded, 81,939 strokes in the flat table; Axelsen 20
-matches / 1,394 rallies / 58.1% rally win rate, 2 of his matches in the holdout.
+Data (`uv run python -m tactics players`): 94 matches, 81,939 strokes in the flat table,
+81,671 of them in rallies with a known winner. The "87k" in the old README and resume bullets
+was the raw pre-de-duplication row count (36,484 + 52,356 = 88,840) and has been replaced
+everywhere.
 
-Axelsen top-5 (`python -m tactics report --player "Viktor AXELSEN"`, 10 coarse shot types,
-min n 30, prior 20):
-1. opponents' pushes/rushes -> point lost within 2 shots 21% (CI 18-25%, n=495) vs 11% baseline
-2. opponents' smashes -> 18% (16-21%, n=967) vs 11%
-3. point decided right after Axelsen lob, opponent smash -> he wins 11% (5-26%, n=35) vs 58%
-4. point decided right after opponent lob, Axelsen smash -> 94% (83-98%, n=48) vs 58%
-5. opponents' pushes/rushes to his rear backhand -> 35% (25-45%, n=81) vs 11%
+**Axelsen's report v2** (`python -m tactics report --player "Viktor AXELSEN"`, 20 matches,
+1,394 rallies, 58.1% win rate; all comparisons against all other players in the same situation):
 
-Holdout replication (`python -m tactics evaluate ...`, five players): 13 REPLICATES, 1 FAILS,
-11 UNTESTABLE. Axelsen 2/0/3, An Se Young 5/0/0, Chou Tien Chen 0/0/5 (no holdout match),
-Chen Yufei 3/0/2, Lee Zii Jia 3/1/1. The failure: "after Lee's own defensive returns he loses
-within 2 shots 16% vs 11%" came out 7% vs 8% on holdout (intervals disjoint).
+1. Shots to his body: loses within two shots 7% (n=97, CI 4-14%) vs 20% for typical pros (-13, CI -18 to -5).
+2. Net shots to his front forehand: 7% (n=751) vs 14% (-7, CI -8 to -4).
+3. Smashes to his mid forehand: 16% (n=472) vs 23% (-7, CI -11 to -4).
+4. In game 3, clears: 24% (n=46) vs 11% (+13, CI +3 to +28).
+5. Anything he plays to the opponent's mid forehand: 6% (n=1,342) vs 10% (-4, CI -5 to -2).
 
-M3 (`scripts/m3_baseline.py`, 14 holdout matches, 1,110 rallies):
-- live prefixes: everything at chance, AUC 0.50-0.52 (base rate, heuristic, logistic, GRU)
-- pre-final: last-hitter heuristic acc 0.657 / AUC 0.657; logistic acc 0.668 / AUC 0.730; GRU log loss 0.608 / AUC 0.725
-- full rally, final zone masked: GRU acc 0.747, log loss 0.529, Brier 0.175, AUC 0.815
-- Shot Influence (ICDM 2021) reports AUC 0.8966 / Brier 0.1329 on 19 private matches with a
-  2-match test set and richer per-stroke features; see the doc for why these are only loosely comparable.
+"How to play against Axelsen" leads with the weaknesses: game-3 clears, pushes/rushes to his rear
+backhand (35% vs 23%, +11, CI +2 to +23, n=81), game-3 shots to his front backhand (18% vs 11%).
+"Smashes hurt everyone" is gone from the top-5; its v2 form is "smashes hurt Axelsen 8 points
+less than typical pros".
 
-Zone evidence (`scripts/zone_diagnostics.py`): landing depth is tri-modal with a valley at
-4.5-5.0 m (5.0 m split kept); front/mid valley near 2.9 m (1.98 m kept, 2.5 m suggested); body
-shots at 0.5 m = 712 in-play strokes (1.1%), 4.5% of smashes, 5.0% of drives; median
-feet-to-contact distance 0.80 m (0.75 m radius suggested as the alternative).
+**Replication** (`python -m tactics evaluate ...` on five players, 25 insights per scheme, strict
+verdicts against the typical-pro reference, D25):
 
-TrackNetV3 wrapper on a synthetic clip (`tests/test_tracknet.py -s`): 48 frames, 28 detections,
-median error 2.4 px, 100% of detections within 15 px.
+| scheme | REPLICATES | SAME DIRECTION | FAILS | UNTESTABLE |
+|---|---|---|---|---|
+| holdout (1-3 matches per player) | 1 | 8 | 6 | 10 |
+| leave-one-match-out | 8 | 16 | 1 | 0 |
+| leave-one-opponent-out | 7 | 13 | 2 | 3 |
 
-## What failed or was skipped, and why
+Axelsen: 3 replicate / 2 same direction under both leave-one-out schemes, 0 fail. His "net shots
+to the front forehand" claim was selected in all 20 folds.
 
-- **Commit trailers.** Your "leave Claude out of contributors" arrived after two commits had a
-  `Co-Authored-By: Claude` trailer. Rewriting them needs a force-push, which the session's safety
-  rules blocked. All later commits are clean. Two commands to fix it are in DECISIONS D18. GitHub's
-  Contributors tab only counts commit authors (you), so the trailer shows in the commit messages, not
-  in the contributor list.
-- **Chou Tien Chen is untestable**: none of his 11 matches is in the dataset-defined holdout. Chen
-  Yufei and Lee Zii Jia were evaluated as well because they have the most holdout matches.
-- **Zone-level claims mostly untestable** (7-9 holdout instances). The coarse claims replicate;
-  the sharp ones need more holdout matches per player. `docs/EVALUATION.md` lists follow-ups.
-- **First M3 run was misleading** (everything at chance) because one model served three
-  questions. It was restructured into three settings (D15) rather than tuned.
-- **No real footage** was used anywhere; M2 tools are tested on synthetic data and a hand-built
-  session only. InpaintNet (gap filling) is not wrapped.
-- **Lint policy** relaxed from 100 to 120 columns for E501 after formatting at 100 (D16); the
-  remaining long lines were report sentences.
+**Threshold sensitivity** (`scripts/threshold_sensitivity.py`): front/mid at 2.5 m keeps 22 of
+25 top-5 insights; body 0.75 m keeps 16 of 25; both 14 of 25.
+
+**Position maps** (Axelsen): base 3.82 m from the net, 0.28 m to the forehand side (other
+players' bases 3.27-4.40 m). Pulled from base 1.22 m by pushes/rushes vs 1.62 m for typical pros
+(-0.39, CI -0.47 to -0.32); by clears 2.27 vs 2.05 m (+0.22). Distance per own stroke 1.58 m vs
+1.70 m (-0.12, CI -0.17 to -0.07), a lower bound in both cases.
+
+**Habits** (Axelsen): smashes 75% of clears to his rear backhand (n=191) vs 37% for typical pros
+(+38, CI +31 to +44); 72% of lobs to his rear backhand vs 41%. Reply entropy after a clear to the
+rear backhand 2.18 bits (4.5 effective replies) vs 3.11 for typical pros at the same n. Opens
+short serve > opponent net > lob in 32% of his service rallies vs 19%.
+
+**xP** (`scripts/xp_baseline.py`, 12 s): holdout AUC 0.50 on non-final strokes for xP-pre and
+xP-post, logistic and gradient boosting alike; 0.79 on final strokes; with the final stroke's
+out / net zone visible, 0.986 (the leak). Axelsen: +0.085 points above expectation per rally
+overall; no shot type differs from his own overall; finishing smashes +0.146 vs +0.043 for other
+pros (difference +0.104, CI +0.039 to +0.168, n=220).
+
+**Live advantage** (`scripts/live_state.py`): best live-prefix AUC 0.498 (logistic with the last
+two strokes' state), GRU 0.491, regularised GRU 0.488; pass bar 0.60. FAIL.
+
+## What failed or was changed from the brief, and why
+
+- **The live advantage bar was not built** (E failed its pre-set bar). The report's momentum view
+  is the xP section.
+- **xP is honest rather than flattering.** The "+0.08 points for rear-court smashes" style claim
+  does not survive: mid-rally xP is at chance, so per-shot "points above expectation" mostly
+  measures the player's overall edge. The report says so first, shows a "vs own overall" column,
+  and gives the finishing table where the model has signal. Intervals are over rallies, not
+  strokes (every stroke in a rally shares its outcome).
+- **The holdout replication looks worse than before** (1 of 25 replicates strictly, 6 fail). Two
+  reasons, both documented: the v2 rule is stricter (interval on the difference must exclude
+  zero, not merely overlap), and v2 insights are 4-13 point differences that 1-3 holdout matches
+  cannot resolve. Leave-one-match-out, which tests every insight on every match, is the
+  informative scheme and the one quoted first.
+- **Selection stability is moderate**: several top-5 insights are selected in only half of the
+  leave-one-out folds. The report's top-5 is "five of roughly ten supported patterns".
+- **Body-zone claims depend on the 0.5 m radius** (9 of 25 insights change at 0.75 m).
+- **Shrinkage no longer drives anything** (D19); `--prior` still exists but only fills the
+  `shrunk` column, which the report no longer prints.
+- The full `tactics report` now takes about 40 s (loading 13 s, xP 12 s, habits 4 s, the rest
+  under 2 s); `--no-xp`, `--no-habits`, `--no-positions` skip sections.
 
 ## Decisions you should review
 
-1. **D2: Axelsen is encoded right-handed.** Your brief said left-handed; Wikipedia's infobox and a
-   second profile say right, and no source says left. One line in `config/players.toml` flips it
-   and every forehand/backhand label follows. Zhao Junpeng turned out to be left-handed.
-2. **D1: the repo is private.** Flip to public when ready.
-3. **D8: zone thresholds** kept at your values; alternatives (front 2.5 m, body 0.75 m) documented
-   with the evidence.
-4. **D9/D10: what counts as a condition.** Sequences exclude the decisive stroke; danger analyses
-   exclude out/net-error zones. This removed the 95-99% "insights" and left 18-35% ones.
-5. **D11-D13: pressure = either player at 18+, prior strength 20, top-5 selection rule.**
-6. **D18: the two trailer commits.**
-7. **Holdout size.** 1-3 matches per player is thin; consider a leave-one-match-out replication
-   as the next evaluation step (listed in EVALUATION.md).
+1. **D19 role-based population.** The reference for "shots Axelsen faces" includes other players
+   facing Axelsen's own shots. Defensible, but a peer reference (same event, >= 5 matches) is the
+   next check (EVALUATION.md section 5).
+2. **D20 top-5 only from danger tables**, single-factor rows capped at one per table. If you want
+   setups back in the ranking, it is one tuple in `analyses.py`.
+3. **D23 xP framing.** Keep the "Read this first" paragraph in the report; it is the difference
+   between a result and a misleading one.
+4. **D2 Axelsen handedness** is still encoded right-handed with sources; unchanged from last night.
+5. **D1 repo private.**
 
 ## Three resume bullets (verified numbers only)
 
-- Built a badminton tactical analyzer on 94 professional matches (87k annotated strokes) that
-  produces per-player reports with Wilson confidence intervals and shrinkage; 13 of 14 testable
-  top insights replicated on 14 held-out matches.
-- Designed receiver-relative, handedness-aware court zones from homography-projected positions
-  (all 43 players' handedness verified and cited) and validated the thresholds against the
-  landing-depth distribution of 66k in-play strokes.
-- Trained rally-outcome models (logistic regression, GRU, PyTorch) under a match-level split and a
-  no-leakage protocol: AUC 0.73 at the decisive exchange and 0.815 with the final stroke's zone
-  masked, versus 0.66 for the strongest heuristic; wrapped MIT-licensed TrackNetV3 and verified
-  it end to end (median error 2.4 px on a synthetic clip).
+- Built a badminton tactical analyzer on 94 professional matches (81,939 annotated strokes) that
+  compares each player with every other pro in the same situation (Newcombe intervals on the
+  difference) and writes coaching reports; under leave-one-match-out replication 8 of 25 top
+  insights replicate strictly and 24 of 25 keep their direction.
+- Designed receiver-relative, handedness-aware court zones, position maps, habit / entropy
+  scouting tables and a leak-free expected-points model (holdout AUC 0.79 at the decisive stroke,
+  0.50 mid-rally, 0.986 with the outcome leaked), all with match-level splits and 70 tests.
+- Ran and documented two pre-registered negative results (live rally prediction with sequence
+  and state features, AUC 0.50 vs a 0.60 bar) and wrapped MIT-licensed TrackNetV3 end to end
+  (median error 2.4 px on a synthetic clip).
 
 ## Suggested first hour this morning
 
-1. `git checkout overnight-1 && uv sync --extra dev && uv run pytest`
-2. Read `outputs/Viktor_AXELSEN.md` top to bottom with a coach's eye; note anything that reads wrong.
-3. Decide D2 (handedness) and D18 (trailers); run the two commands if you want them stripped.
-4. Open `docs/EVALUATION.md` and pick the next check (leave-one-match-out is cheapest).
+1. `git checkout features-v3 && uv sync --extra dev --extra m3 && uv run pytest`
+2. Read `outputs/Viktor_AXELSEN.md` top to bottom with a coach's eye, especially the two coach
+   sections and the habits tables.
+3. Decide whether `features-v3` merges into `main` (overnight-1 is already its base).
+4. Pick the next evaluation check: peer reference or coach judgement (EVALUATION.md section 5).

@@ -1,17 +1,20 @@
 # Walkthrough: how the project works and why
 
 Written so the author can explain every part without notes. Each module gets: what it does, the
-design decision behind it, and the trade-off accepted.
+design decision behind it, and the trade-off accepted. Sections 6-7 cover the Phase 3 features
+(population baseline, position maps, habits, xP, the live-advantage experiment).
 
 ## 1. The one-paragraph pitch
 
 Consumer badminton apps already count smashes and draw shuttle trails. What they do not do is
 tell a player *which patterns of play win or lose them points*, the thing a good coach does from
-the sideline. This project builds that tactical layer. Milestone 1 does it on 94 professional
-singles matches (ShuttleSet + ShuttleSet22, 87k strokes) and produces a Markdown report per
-player with its top insights, each with a sample size and a confidence interval, and tests those
-insights on held-out matches. Later milestones replace the professional stroke data with stroke
-data extracted from the author's own phone footage.
+the sideline. This project builds that tactical layer. It works on 94 professional singles
+matches (ShuttleSet + ShuttleSet22: 81,939 strokes in the flat table, 81,671 of them in rallies
+with a known winner) and produces a Markdown report per player: where the player differs from
+typical pros, written as advice for an opponent and for the player, every claim with a sample
+size and a confidence interval, re-tested on matches that were not used to find it. Later
+milestones replace the professional stroke data with stroke data extracted from the author's own
+phone footage.
 
 ## 2. Data flow
 
@@ -23,13 +26,13 @@ Match > Game > Rally > Stroke  (model.py)   and   one flat stroke table (pandas)
    | zones.py           receiver-relative coach zones, fine grid, movement features
    v
 annotated stroke table
-   | analyses.py        per-player rate tables (rally length, setups, danger conditions, splits)
-   | stats.py           Wilson CI, shrinkage, reliability flags
+   | analyses.py        per-player rate tables + the same tables for all OTHER players
+   | stats.py           Wilson CI, Newcombe CI on the difference, t / Welch intervals for means
    v
-PlayerReport
-   | report.py          top-5 selection, plain-language claims, tables, heatmaps  -> outputs/<player>.md
-   | evaluation.py      same analyses on holdout matches, replicate / fail verdicts -> docs/EVALUATION.md
-   | outcome_model.py   sequence models for "who wins this rally" (M3 baseline)
+PlayerReport                     positions.py   habits.py   xp.py
+   | report.py          top-5, coach sections, tables, heatmaps, extra sections -> outputs/<player>.md
+   | evaluation.py      holdout / leave-one-match-out / leave-one-opponent-out -> docs/EVALUATION.md
+   | outcome_model.py, live_state.py   "who wins this rally" models (M3, docs/M3_BASELINE.md)
 ```
 
 ## 3. Modules
@@ -59,7 +62,7 @@ category for per-player statistics. The report defaults to 10 (approved decision
 ### `model.py`
 What: four dataclasses. Positions are tuples in court metres; names, not labels.
 Why dataclasses and not an ORM or nested dicts: zero dependencies, readable in a debugger,
-`slots=True` keeps 87k strokes cheap, and the flat pandas table is built from them once.
+`slots=True` keeps 82k strokes cheap, and the flat pandas table is built from them once.
 
 ### `loader.py`
 What: reads the CSVs and fixes five things on the way in.
@@ -91,63 +94,75 @@ What: three layers of spatial features from the **receiver's** point of view.
   cross-court vs straight relative to the hitter's contact point.
 Why receiver's view: a shot's tactical meaning is where it sends the opponent. A left-handed
 receiver flips the lateral axis and nothing else changes.
-Evidence for thresholds (DECISIONS D8): landing depth is tri-modal with a valley at 4.5-5.0 m, so
-5.0 m is a natural rear boundary; the front/mid valley is nearer 2.9 m than the 1.98 m service
-line (kept because it is a real line; 2.5 m suggested). Body shots at 0.5 m are 1.1% of strokes
-and are 4-5% of smashes and drives, the expected signature.
+Evidence for thresholds (DECISIONS D8, D26): landing depth is tri-modal with a valley at
+4.5-5.0 m, so 5.0 m is a natural rear boundary; moving the front/mid line to 2.5 m changes 3 of
+25 top-5 insights across five players, moving the body radius to 0.75 m changes 9 of 25
+(`outputs/sensitivity.md`).
 
 ### `stats.py`
-What: Wilson 95% intervals, Beta-binomial shrinkage toward a baseline, and `rate_table`, which
-every analysis returns.
+What: Wilson 95% intervals; Newcombe's hybrid-score interval for the difference of two rates
+(checked against the paper's example); `rate_table` and `compare_to_reference`, which every
+analysis returns; t and Welch intervals for means (positions, xP).
 Why Wilson: the normal interval collapses at 0/10 or 10/10; Wilson stays sensible.
-Why shrinkage: screening hundreds of patterns and keeping the extremes is the winner's curse. A
-prior worth 20 rallies means 5/6 (83%) reports as 58% against a 50% baseline while 50/60 stays
-at 69%. Ranking uses the shrunk value; the raw rate and interval are always shown next to it.
-Trade-off: the prior strength is a judgement call (D12). It is a CLI flag.
+Why Newcombe for differences: it combines the two Wilson intervals, so it behaves when one rate is
+near 0 or one sample is small, which is exactly the regime of "this player vs everyone else".
+Shrinkage toward the player's baseline is still computed (`shrunk`) but no longer drives any
+ranking (D19).
 
 ### `analyses.py`
 What: the per-player analyses, each a rate table with a `key` column so the same row can be
-looked up on holdout data.
-- Win rate by rally-length bucket (1-4, 5-8, 9-12, 13-20, 21+).
-- Win rate by the 2 and 3 strokes **before the decisive stroke** ("setups"). Conditioning on the
-  final stroke itself would be circular: an error loses, a winner wins (D9). The final stroke is
-  reported separately as counts: own winner / opponent error / own error / opponent winner.
+looked up on other matches, and each with a **reference** column: the same pattern measured on all
+other players in the same role (receiver for "shots faced", hitter for "shots played").
 - Danger conditions: P(point lost within 2 shots | shot type x receiver zone), for shots the
-  player hits (their choices) and shots they face (their weaknesses). Out/net-error zones are
-  excluded because they are outcomes (D10).
-- Splits by game number, by late-game pressure (either player at 18+), and serve/receive.
-Why "within 2 shots": a bad shot usually costs the point on the next stroke or the one after;
-longer horizons wash out into the rally baseline.
+  player hits (their choices) and shots they face (their weaknesses), plus shot-alone and
+  zone-alone versions, overall, in game 3 and at 18+. These are the **actionable** tables and the
+  only source of ranked insights (D20).
+- Context: win rate by rally-length bucket, by the 2 and 3 strokes before the decisive stroke
+  (setups, D9), by game number, pressure and serve. Setups are compared with typical pros in the
+  same setup; the symmetric splits with the player's own overall rate (across all pros they are
+  50% by construction).
+Out/net-error zones are excluded from danger analyses because they are outcomes (D10); unknown
+shot types are excluded.
+Ranking: a row is a candidate when both n >= 30 and the Newcombe interval of (player - typical
+pros) excludes zero; candidates are ordered by the interval bound nearest zero, the smallest
+difference the data still supports. Shot-alone and zone-alone rows have the largest n and would
+win every ranking, so they are capped at one per table in the top-5.
 
 ### `report.py`
-What: picks the top 5 (n >= 30, interval excludes the baseline, ranked by |lift| x sqrt(n), at
-most two per analysis family, D13), writes a sentence per insight with the numbers inline, then
-every table with n, rate, CI, shrunk value, lift and a flag, then fine-grid heatmaps.
-Why sentences: the audience is a player or coach. "After opponents' pushes to his rear backhand
-Axelsen loses the point within 2 shots 35% of the time (n=81) vs 11%" is actionable; a table is not.
+What: the top-5; "How to play against <player>" (weaknesses first, then strengths an opponent
+should stop feeding) and "What <player> should fix" in coach language; every table with n, rate,
+CI, the typical-pro rate and the difference with its interval; a descriptive context section; the
+landing heatmaps; and hooks for the position, habit and xP sections.
+Why sentences: the audience is a player or coach. "When opponents push or rush to Axelsen's rear
+backhand, Axelsen loses the point within two shots 35% of the time (n=81); typical pros lose 23%"
+is actionable; a table is not. The wording module knows verb forms per shot type so the sentences
+read naturally ("push or rush", "plays a net shot").
 Surname handling: the dataset writes family names in capitals; "An Se Young" is the exception
 (Korean, family name first).
 
 ### `splits.py` and `evaluation.py`
-What: the match-level holdout (ShuttleSet22's own validation + test ids, 14 matches) and the
-replication procedure: top-5 on development data, re-measure on holdout, verdict REPLICATES
-(same sign, intervals overlap), FAILS, or UNTESTABLE (< 10 holdout instances).
+What: the match-level holdout (ShuttleSet22's own validation + test ids, 14 matches) and three
+replication schemes: holdout, leave-one-match-out, leave-one-opponent-out (D25). Verdicts per
+insight: REPLICATES (out-of-sample difference from typical pros has the same sign and its
+interval excludes zero), SAME DIRECTION, FAILS, UNTESTABLE (< 10 instances); plus, for the
+leave-one-out schemes, in how many folds the insight was selected at all.
 Why match-level: rallies of one match share players, form and annotator; a rally-level split
-leaks. Why the dataset's ids: chosen before we ran anything, so the holdout is not ours to tune.
-Result so far: 13 of 14 testable insights replicated across five players, 11 were untestable
-(zone-level claims need more holdout matches), 1 failed (docs/EVALUATION.md).
+leaks. Why leave-one-out as well: 1-3 holdout matches per player left zone-level claims
+untestable; leave-one-match-out tests every insight on every match while never selecting on it.
+Current counts: `docs/EVALUATION.md`.
 
 ### `cli.py`
-`tactics players`, `tactics report --player NAME`, `tactics evaluate --player NAME ...`,
-`tactics zones-check`. Argparse, no framework: the interface is four commands.
+`tactics players`, `tactics report --player NAME [--no-positions --no-habits --no-xp]`,
+`tactics evaluate --player NAME ... [--scheme holdout|lomo|looo|all]`, `tactics zones-check`.
+Argparse, no framework.
 
-### `outcome_model.py` (M3 baseline)
+### `outcome_model.py` (M3 baseline) and `live_state.py`
 What: predict whether the **server** wins the rally from a prefix of strokes, with a bag-of-tokens
 logistic regression and a small GRU, against base-rate and "last hitter wins" heuristics, in
-three settings (live prefix / pre-final / full rally with the final zone masked, D15).
+three settings (live prefix / pre-final / full rally with the final zone masked, D15);
+`live_state.py` repeats the live setting with per-stroke state features (section 6E).
 Why the server as reference: every rally has exactly one, so no player identity enters the model.
 Why never the final stroke's zone: it is the outcome.
-Key finding: see docs/M3_BASELINE.md.
 
 ### `tools/` (M2 tooling)
 - `calibrate_court.py`: four clicks give a homography in ShuttleSet's convention, so our footage
@@ -161,38 +176,45 @@ Key finding: see docs/M3_BASELINE.md.
 ## 4. Design decisions worth defending in an interview
 
 1. **Statistics before models.** The deliverable is a list of claims a coach can act on. Claims
-   need uncertainty, not just point estimates, and a holdout test, not just a p-value.
-2. **Receiver-relative, handedness-aware zones.** Most tools draw heatmaps in camera coordinates.
+   need uncertainty, not just point estimates, and an out-of-sample test, not just a p-value.
+2. **Compare with typical pros, not with the player's own average.** "Smashes hurt" is true of
+   everyone; "smashes hurt Axelsen 8 points less than typical pros" is about Axelsen.
+3. **Receiver-relative, handedness-aware zones.** Most tools draw heatmaps in camera coordinates.
    Ours answer "where did the shot send the opponent, relative to their backhand".
-3. **No circular conditions.** Dropping the decisive stroke from sequences and the outcome zones
+4. **No circular conditions.** Dropping the decisive stroke from sequences and the outcome zones
    from danger analyses cost us the most "impressive" numbers (95-99% rates) and replaced them
-   with real ones (18-35%).
-4. **Match-level everything.** Splits, holdout and the M3 experiment all split by match.
-5. **Reuse perception, own the tactics.** TrackNetV3 is wrapped, credited and left unmodified;
-   the effort went into the analysis layer.
-6. **Reproducibility.** Every number in the docs comes from a command written next to it;
+   with real ones.
+5. **Match-level everything.** Splits, holdout, leave-one-out and both model experiments split
+   by match; hyper-parameters are chosen on a validation split inside the development matches.
+6. **Report negative results as results.** Live rally prediction is at chance with and without
+   state features; mid-rally xP is at chance. Both are documented with the commands that show it,
+   and the features that were promised on a pass were not built.
+7. **Reuse perception, own the tactics.** TrackNetV3 is wrapped, credited and left unmodified.
+8. **Reproducibility.** Every number in the docs comes from a command written next to it;
    thresholds live in TOML; the dataset is fetched by a script.
 
-## 5. Fifteen likely interview questions
+## 5. Fifteen likely interview questions (Milestone 1)
 
-1. *Why ShuttleSet and not your own data first?*  It has 87k expert-labelled strokes with positions
+1. *Why ShuttleSet and not your own data first?*  It has 82k expert-labelled strokes with positions
    and outcomes, MIT licensed. Building perception first would have meant months before any
    tactical result; this way the tactics layer exists and the perception layer plugs into it.
-2. *How do you know an insight is real?*  Wilson CI, shrinkage toward the baseline, a minimum n of
-   30, and a match-level holdout replication with explicit verdicts. 13/14 testable claims
-   replicated; one failed and is documented.
+2. *How do you know an insight is real?*  Wilson CI on the rate, Newcombe CI on the difference
+   from typical pros, a minimum n of 30 on both sides, and three out-of-sample replication
+   schemes with explicit verdicts (`docs/EVALUATION.md`).
 3. *What is the winner's curse here and how do you handle it?*  Screening hundreds of patterns
-   and keeping the extremes inflates them. Shrinkage pulls small-n extremes toward the baseline
-   and the holdout re-measures the chosen ones without selection.
+   and keeping the extremes inflates them. Ranking by the conservative bound of the interval
+   penalises small-n extremes, and leave-one-match-out re-measures each chosen insight on matches
+   that did not take part in choosing it.
 4. *Why not use the dataset's area codes?*  Undocumented, side-relative, and useless for our own
    footage. Recomputing from metres gives one definition that transfers.
 5. *How do you know which half a player is on?*  Positions relative to the net, voted per rally,
    with the 11-point change of ends handled by "side periods". Tested on synthetic games.
 6. *What did the first report get wrong?*  Its top insight was "shots that go out lose the point".
-   Conditioning on outcomes is circular; the fix was to exclude outcome zones and the decisive stroke.
+   Conditioning on outcomes is circular; the fix was to exclude outcome zones and the decisive
+   stroke. The second version's top insight was "smashes hurt", true of everyone; the fix was the
+   population reference.
 7. *Why Wilson instead of a normal interval or a Bayesian credible interval?*  Correct coverage at
-   small n and extreme rates, closed form, standard. A Beta posterior would be equivalent in spirit;
-   shrinkage already uses a Beta prior.
+   small n and extreme rates, closed form, standard. A Beta posterior would be equivalent in spirit.
 8. *Why is the M3 model at chance in the "live" setting?*  Pro singles rallies are balanced until
    the decisive exchange; the strongest signal is parity of the pre-final stroke, which a model
    that does not know the rally is ending cannot use. In the pre-final setting the models beat the
@@ -204,13 +226,89 @@ Key finding: see docs/M3_BASELINE.md.
 10. *Handedness: how do you know?*  Every player verified from a Wikipedia infobox or a news
     profile, with the URL in `config/players.toml`. Five left-handers in the data.
 11. *Why a 0.5 m body radius?*  It is below the median feet-to-contact distance (0.80 m), so it
-    captures jammed shots only; at 0.5 m body shots are 4-5% of smashes and drives and under 0.5% of
-    lifts, which is the expected signature. 0.75 m is the documented alternative.
+    captures jammed shots only; at 0.5 m body shots are 4-5% of smashes and drives, the expected
+    signature. 0.75 m is the documented alternative and the sensitivity run shows it changes 9 of
+    25 top-5 insights, so body-zone claims are read as "at 0.5 m" claims.
 12. *What breaks when you move to phone footage?*  Camera motion (TrackNetV3's median background),
     lighting, player identity, and amateur shot mix. The roadmap measures each against hand labels.
 13. *How do you keep the A/B label from leaking?*  The loader resolves names immediately; the flat
     table has no A/B column; tests assert it.
 14. *What would you do with 10x more data?*  Per-player models (M3 with player embeddings),
-    opponent-adjusted baselines, and zone-level holdout tests that are currently UNTESTABLE.
+    opponent-adjusted baselines, and finer zone-level tests.
 15. *What is the licence situation?*  Dataset repo MIT; TrackNetV3 code and weights MIT (checksum
     recorded); our code MIT-compatible. Broadcast frames are never stored or redistributed.
+
+## 6. Phase 3 features, in plain words
+
+### A. Population baseline (`stats.compare_to_reference`, `analyses.population_strokes`)
+Every rate the report shows for a player is computed a second time for *all other players in the
+same situation*: receiving the same shot to the same zone, or playing it. The two rates are
+compared with Newcombe's interval on their difference. Exclusion is by role, not by match, so the
+player's opponents facing the player's shots are part of the "typical pro" reference for that
+pattern. Insights are ranked by the smallest difference the data still supports (D19).
+
+### B. Position maps (`positions.py`)
+ShuttleSet records where each player stands only at the instant a stroke is hit, so these are
+position maps, not footwork paths. Positions are put in the player's own half (metres from the
+net, metres from the centre line toward their own right; the axis is labelled with their forehand
+and backhand side from `players.toml`, D21). From them: two heatmaps on a court drawn to scale
+(when hitting, when the opponent hits), the base position (median position when the opponent
+hits a non-serve stroke) with how far each opponent shot type pulls the player from it, and the
+distance per rally and per own stroke as a lower bound, split by game and by 18+ pressure. All of
+it next to the same numbers for all other players, with t and Welch intervals.
+
+### C. Habits and set plays (`habits.py`)
+A situation is the opponent's shot type and the zone it landed in, from the player's view. For
+each situation the module measures what the player replies with (shot type; shot type and target
+zone) and compares each reply's share with other pros in the same situation; a habit is a reply
+chosen significantly more often (D22). Predictability is the Shannon entropy of the reply
+distribution, Miller-Madow corrected, compared with the population's entropy after subsampling
+the population to the player's n, so small samples do not look falsely predictable. Set plays are
+the first three and four strokes from the serve, by who served, ranked by how distinctive the
+opening is versus other pros in the same role, with the win rate attached.
+
+### D. xP, expected points (`xp.py`, `docs/XP.md`)
+P(the hitter wins the rally | the shot just played). Two models because the honest inputs depend
+on when you ask: xP-pre sees only what is known before the shuttle lands and is used for every
+per-player number; xP-post adds the landing and is restricted to non-final strokes, because a
+final stroke's landing is the outcome (D23). Logistic regression and gradient boosting, chosen on
+a validation split, scored once on the 14 holdout matches. Result: mid-rally xP is at chance
+(AUC 0.50), the final stroke is predictable (0.79). The report says this first, shows "points
+above expectation" per shot and court band next to typical pros and next to the player's own
+overall, and a Finishing table on final strokes where the model has signal. Intervals are over
+rallies, not strokes.
+
+### E. Live advantage experiment (`live_state.py`, `docs/M3_BASELINE.md`)
+Does per-stroke state (both positions, distance from base, recent movement, stroke index) give
+live prediction the signal that tokens lack? Pass bar set in advance: holdout live-prefix AUC
+>= 0.60. Result: 0.498 (logistic) and 0.491 / 0.488 (GRU, default and regularised). FAIL; no
+advantage bar was built (D24). The report's momentum view is xP per shot.
+
+## 7. Five more interview questions (Phase 3)
+
+16. *Why compare with "typical pros" instead of a player's own baseline, and what is the
+    catch?*  The own-baseline ranking surfaces universal truths ("smashes hurt"); the population
+    comparison surfaces what is specific to the player. The catch is that the reference pools
+    men's and women's singles and players with one or two matches, so "typical pro" means "this
+    dataset", and the role-based exclusion means the player's own shots are in other players'
+    "faced" references. Both are stated in the report.
+17. *Why is the statistical unit a rally in the xP tables but a stroke in the danger tables?*
+    "Points above expectation" averages (outcome - xP) over a player's strokes, and every stroke
+    in a rally shares that rally's outcome, so stroke-level intervals would be far too narrow;
+    aggregating within rally first fixes that. The danger tables condition on a single stroke and
+    an event within two strokes of it, where the rally-sharing is much weaker; the holdout and
+    leave-one-match-out schemes are the guard there.
+18. *You built xP and it is at chance mid-rally. Was it wasted?*  No: it is the clean negative
+    result that explains the M3 live result and the failed live-advantage experiment, it gives a
+    real finishing metric (Axelsen's final smashes are winners 10 points more often than the model
+    expects, over and above other pros), and the leak check shows what a careless xP model would
+    have reported (AUC 0.986 on final strokes with the landing visible). The feature pipeline is
+    what a richer data source would plug into.
+19. *How do you stop entropy from flattering players with few samples?*  Plug-in entropy is biased
+    low for small n. We apply the Miller-Madow correction and, more importantly, never compare
+    with the population at its full n: the population's replies are subsampled to the player's n
+    200 times and the player's value is judged against that band.
+20. *What did the leave-one-out evaluation change about how you present insights?*  It made
+    selection stability visible ("selected in 15 of 20 folds") and separated REPLICATES from SAME
+    DIRECTION, so an insight supported by one or two matches is labelled as such instead of being
+    called replicated because a wide holdout interval happened to overlap.

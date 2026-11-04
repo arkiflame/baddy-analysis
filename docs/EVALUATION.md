@@ -1,97 +1,134 @@
 # Evaluation: are the insights real?
 
-A tactical insight is a claim like "after opponents' pushes to Axelsen's rear backhand he loses
-the point within two shots 35% of the time, against an 11% baseline". Three things can make such
-a claim wrong: chance (small n), overfitting the selection (we looked at hundreds of patterns and
-kept the extremes), and label noise (annotators, zone thresholds). This document describes how
-we guard against each and reports the results of the first replication run.
+A tactical insight is now a claim like "when opponents push or rush to Axelsen's rear backhand
+he loses the point within two shots 35% of the time; typical pros lose 23%". Three things can
+make such a claim wrong: chance (small n), selection (we looked at hundreds of patterns and kept
+the extremes), and label noise (annotators, zone thresholds). This document describes the guards
+against each and reports the replication results of the current (v2) ranking.
 
 ## 1. Guards built into every report
 
 | Risk | Guard | Where |
 |---|---|---|
-| Small samples | 95% Wilson interval on every rate; rows with n < 30 are flagged `too few` and never ranked | `src/tactics/stats.py` |
-| Winner's curse from screening many patterns | Beta-binomial shrinkage toward the player's baseline (prior = 20 rallies); top-5 must have an interval that excludes the baseline; at most two insights per analysis family | `stats.py`, `report.py` |
-| Circular conditions | The rally-ending stroke is never a condition: sequences are the strokes *before* the final one; `out` / `net_error` zones are excluded from danger analyses | `analyses.py` (D9, D10) |
-| Outcome leakage via labels | Players are keyed by name; the dataset's A/B labels (A = match winner) are never used as a variable | `loader.py`, D5 |
-| Threshold sensitivity | All zone thresholds live in `config/zones.toml`; the evidence for them is in `docs/DECISIONS.md` D8 | |
+| Small samples | 95% Wilson interval on every rate; a row needs n >= 30 for the player AND n >= 30 for the reference before it can be ranked | `stats.py` |
+| Universal truths dressed as insights | every rate is compared with the same pattern over all other players ("typical pros"), with Newcombe's interval on the difference; ranking is by the difference, not by lift over the player's own average | `analyses.py`, D19 |
+| Winner's curse from screening many patterns | ranking by the interval bound nearest zero (the smallest difference the data still supports) penalises small-n extremes; at most two shot-and-zone rows and one single-factor row per table in the top-5 | `report.py` |
+| Circular conditions | the rally-ending stroke is never a condition (sequences are the strokes *before* it); `out` / `net_error` zones are excluded from danger analyses | `analyses.py`, D9, D10 |
+| Non-actionable claims in the top-5 | only danger tables (shot type x zone, shot alone, zone alone) are ranked; setups, rally length and game splits are descriptive context | D20 |
+| Outcome leakage via labels | players are keyed by name; the dataset's A/B labels (A = match winner) are never a variable | `loader.py`, D5 |
+| Threshold sensitivity | all thresholds in `config/zones.toml`; the effect of moving them is measured (section 4) | D8, D26 |
 
-## 2. Holdout replication (the main test)
+## 2. Replication schemes (D25)
 
-**Split.** ShuttleSet22 ships match-level validation and test ids in its own
-`preprocess_data.py` (ids 38, 46-49 and 39, 40, 50, 52-57). We use those 14 matches as the
-holdout and never look at them while developing. The split is by match, so no rally of a holdout
-match can influence the development set.
-
-**Procedure** (`python -m tactics evaluate --player NAME ...`, code in `src/tactics/evaluation.py`):
-
-1. Run the full analysis on development matches only and pick the top-5 exactly as the report does.
-2. Re-run the same analyses on the holdout matches and look up the same (analysis, pattern) rows.
-3. Verdict per insight:
-   - **REPLICATES**: holdout effect has the same sign relative to the holdout baseline and the two 95% intervals overlap.
-   - **FAILS**: sign flips, or the intervals are disjoint.
-   - **UNTESTABLE**: fewer than 10 holdout rallies/strokes match the pattern.
-
-### Results (run 2026-11-04)
-
-Command:
+Code: `src/tactics/evaluation.py`. Command used for every number below (about 7 minutes):
 
 ```
 uv run python -m tactics evaluate --player "Viktor AXELSEN" --player "An Se Young" \
     --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --out outputs/evaluation_raw.md
 ```
 
-| Player | Dev matches | Holdout matches (rallies) | Replicates | Fails | Untestable |
-|---|---|---|---|---|---|
-| Viktor AXELSEN | 18 | 2 (131) | 2 | 0 | 3 |
-| An Se Young | 11 | 1 (76) | 5 | 0 | 0 |
-| CHOU Tien Chen | 11 | 0 (0) | 0 | 0 | 5 |
-| CHEN Yufei | 6 | 3 (277) | 3 | 0 | 2 |
-| LEE Zii Jia | 7 | 2 (164) | 3 | 1 | 1 |
-| **Total** | | | **13** | **1** | **11** |
+* **holdout**: select the top-5 on the development matches; ShuttleSet22's own validation and
+  test ids (14 matches) are held out and were never looked at while developing. Each insight is
+  then measured on the player's holdout matches.
+* **leave-one-match-out (lomo)**: for each of the player's matches, select the top-5 without it
+  and record each selected pattern's count on that match. Each report insight is tested on the
+  pooled out-of-sample counts from the folds that selected it; "selected in 15 of 20 folds" is
+  reported as a stability measure.
+* **leave-one-opponent-out (looo)**: the same with all matches against one opponent held out at
+  once; an insight that only exists against one opponent is that opponent's style, not the
+  player's trait.
 
-Axelsen, An and Chou are the three best-covered players as the brief asked; Chen Yufei and Lee
-Zii Jia were added because they have the most holdout matches.
+Verdict per insight, always against the typical-pro reference it was selected on:
 
-**What replicated** (development estimate, then holdout):
+| verdict | meaning |
+|---|---|
+| REPLICATES | out-of-sample difference from typical pros has the same sign and its Newcombe 95% interval excludes zero |
+| SAME DIRECTION | same sign, interval includes zero |
+| FAILS | opposite sign |
+| UNTESTABLE | fewer than 10 out-of-sample instances |
 
-- Axelsen: opponents' pushes/rushes lead to a lost point within 2 shots 22% (CI 18-26%, n=458) vs 11% baseline; holdout 19% (9-34%, n=37) vs 10%.
-- Axelsen: opponents' smashes, 18% (15-21%, n=849) vs 11%; holdout 19% (13-28%, n=118) vs 10%.
-- An Se Young: all five replicated, including "lobs to her rear forehand are safe for the opponent only 5% of the time" (CI 3-8%, n=278; holdout 0%, n=21) and "smashes to her mid forehand hurt" (26%, n=208; holdout 14%, n=21).
-- Chen Yufei: opponents' pushes/rushes, 29% (22-37%, n=146) vs 15%; holdout 39% (25-55%, n=36) vs 15%. Also "wins more in game 2" (53% vs 46%; holdout 62% vs 52%).
-- Lee Zii Jia: opponents' smashes (27% vs 15%; holdout 15% vs 11%), pushes/rushes (24%; holdout 28%), smashes to his mid backhand (25%; holdout 23%).
+This rule is stricter than the first version's ("same sign and the two intervals overlap"), which
+is why the counts below are not comparable with the numbers reported before Phase 3.
 
-**What failed:**
+## 3. Results (run 2026-11-04, five players, 25 insights per scheme)
 
-- Lee Zii Jia: "after Lee's own defensive returns he loses within 2 shots 16% (CI 12-20%, n=360) vs 11%" did **not** hold: holdout 7% (4-12%, n=158) vs 8%. The holdout interval is disjoint from the development one. Plausible reasons: different opponents in the two holdout matches, or the pattern was a development-set artefact. It should not be presented as a trait.
+| player | matches | scheme | folds | REPLICATES | SAME DIRECTION | FAILS | UNTESTABLE |
+|---|---|---|---|---|---|---|---|
+| Viktor AXELSEN | 20 | holdout | 2 holdout matches | 1 | 3 | 0 | 1 |
+| | | lomo | 20 | 3 | 2 | 0 | 0 |
+| | | looo | 15 | 3 | 2 | 0 | 0 |
+| An Se Young | 12 | holdout | 1 | 0 | 1 | 2 | 2 |
+| | | lomo | 12 | 2 | 3 | 0 | 0 |
+| | | looo | 7 | 2 | 2 | 1 | 0 |
+| CHOU Tien Chen | 11 | holdout | 0 | 0 | 0 | 0 | 5 |
+| | | lomo | 11 | 1 | 4 | 0 | 0 |
+| | | looo | 5 | 1 | 2 | 0 | 2 |
+| CHEN Yufei | 9 | holdout | 3 | 0 | 2 | 2 | 1 |
+| | | lomo | 9 | 1 | 3 | 1 | 0 |
+| | | looo | 5 | 0 | 3 | 1 | 1 |
+| LEE Zii Jia | 9 | holdout | 2 | 0 | 2 | 2 | 1 |
+| | | lomo | 9 | 1 | 4 | 0 | 0 |
+| | | looo | 9 | 1 | 4 | 0 | 0 |
+| **Total** | | **holdout** | | **1** | **8** | **6** | **10** |
+| | | **lomo** | | **8** | **16** | **1** | **0** |
+| | | **looo** | | **7** | **13** | **2** | **3** |
 
-**What could not be tested:** every zone-specific pattern for Axelsen (the two holdout matches
-give only 7-8 instances each) and everything for Chou Tien Chen, who has no holdout match.
-Patterns like "pushes to the rear backhand" are the most coach-relevant and the hardest to
-verify with 1-3 holdout matches per player.
+Full per-insight output with out-of-sample rates, intervals and fold counts: `outputs/evaluation_raw.md`.
 
 ### Reading these results honestly
 
-- Thirteen of fourteen testable insights replicated, which is encouraging, but the testable ones
-  are mostly the coarse, high-n kind ("smashes hurt"). The sharper zone-level claims mostly fell
-  into UNTESTABLE. More holdout matches per player are needed before zone-level claims are trusted.
-- "Opponents' smashes lead to lost points" replicated for every player tested. That is close to a
-  universal truth of badminton, not a player-specific weakness. The player-specific signal is in
-  the *magnitude* relative to the baseline and in which zones, which is exactly where n is thin.
-- The holdout baselines differ from the development baselines (e.g. Axelsen 10% vs 11%, An 10% vs
-  15%), so the test compares lift relative to each set's own baseline, not raw rates.
+- **The holdout scheme is too thin for v2 insights.** The v2 ranking produces differences of
+  4-13 percentage points against typical pros; on 1-3 holdout matches the out-of-sample interval
+  for such a difference is 10-20 points wide. Six of the 25 came out with the opposite sign on the
+  holdout, all with intervals that include the development value (e.g. An Se Young, "anything to
+  the front forehand": 18% vs 12% in development, 7% on 59 holdout strokes). The first version's
+  "13 of 14 replicated" rested on a lenient rule and on coarse claims; under the strict rule the
+  holdout alone cannot confirm or refute most v2 insights.
+- **Leave-one-match-out is the informative test.** Every insight is testable, 8 of 25 replicate
+  with the interval excluding zero, 16 keep the same direction, 1 fails (Chen Yufei, "defensive
+  returns to the mid backhand", 20% in development vs 7% out of sample on 14 strokes). Axelsen's
+  three strongest claims (net shots to his front forehand 7% vs 14%, smashes to his mid forehand
+  16% vs 23%, anything he plays to the opponent's mid forehand 6% vs 10%) replicate under both
+  leave-one-out schemes, and the first was selected in every fold.
+- **Selection is less stable than the point estimates suggest.** Several insights are selected in
+  only half of the folds (Axelsen's body-zone claim 11 of 20, his "anything to the opponent's mid
+  forehand" 10 of 20). The report's top-5 should be read as "five of the roughly ten patterns that
+  the data supports", not as a fixed ranking.
+- **Leave-one-opponent-out agrees with leave-one-match-out** (7 replicate, 13 same direction, 2
+  fail), so no evaluated insight is one opponent's style in disguise; the two failures (An Se
+  Young's "pushes to the mid forehand", Chen Yufei's game-3 lob claim) are small-n claims that
+  also look weak under the other schemes.
+- **Game-3 and 18+ claims are the least reliable family**: small n by construction, and three of
+  the four insights that fail under some scheme are split claims.
 
-## 3. Checks still to do
+## 4. Threshold sensitivity (D26)
 
-1. **Opponent-adjusted baselines.** A player's rate against one opponent's style can dominate
-   when they met several times (Axelsen vs Chou Tien Chen appears repeatedly). Re-run with
-   leave-one-opponent-out and report how many insights survive.
-2. **Coach judgement.** Give a coach (or the author, blind to the numbers) the list of claims
+```
+uv run python scripts/threshold_sensitivity.py        # writes outputs/sensitivity.md
+```
+
+Same five players, same selection rule, zone thresholds moved to the alternatives from D8:
+
+| variant | default top-5 | still in top-5 | dropped | new |
+|---|---|---|---|---|
+| front/mid at 2.5 m (instead of 1.98) | 25 | 22 | 3 | 3 |
+| body radius 0.75 m (instead of 0.50) | 25 | 16 | 9 | 9 |
+| both | 25 | 14 | 11 | 11 |
+
+The front/mid boundary barely matters. The body radius does: it decides which strokes count as
+"to the body", so body-zone rows move in and out of the top-5 (Lee Zii Jia loses 4 of 5 at
+0.75 m, Axelsen 2 of 5). Body-zone insights are therefore "at 0.5 m" claims and the report
+states the thresholds it used. Defaults are unchanged.
+
+## 5. Checks still to do
+
+1. **Coach judgement.** Give a coach (or the author, blind to the numbers) the list of claims
    mixed with inverted decoys ("loses less after pushes") and record agreement. Target: a
    recorded agreement rate, not an anecdote.
-3. **Threshold sensitivity.** Re-run the report with front = 2.5 m and body = 0.75 m (D8) and
-   count how many top-5 insights change.
-4. **Time ordering.** Train on 2018-2021 (ShuttleSet), test on 2022 (ShuttleSet22) for the
+2. **Time ordering.** Select on 2018-2021 (ShuttleSet), test on 2022 (ShuttleSet22) for the
    players present in both; this tests whether patterns persist across seasons.
-5. **Own footage (M2).** Once stroke data from club play exists, repeat the replication there;
+3. **A peer reference.** "Typical pros" pools men's and women's singles and players with one or
+   two matches. Re-run with the reference restricted to the same event and to players with at
+   least five matches, and report how many insights change.
+4. **Own footage (M2).** Once stroke data from club play exists, repeat the replication there;
    the pro patterns may not transfer to amateur rallies.

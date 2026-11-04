@@ -14,8 +14,8 @@ from the README.
 |---|---|---|---|
 | Matches | 44 (2018-2021) | 58 (2021-2022) | 94 |
 | Set files | 104 | 140 | 236 |
-| Rallies | 3,683 | 4,944 | ~8,500 |
-| Strokes | 36,484 | 52,356 | ~87,000 |
+| Rallies | 3,683 | 4,944 | 8,627 raw; 7,888 after de-duplication |
+| Strokes | 36,484 | 52,356 | 88,840 raw; 81,939 after de-duplication (81,671 in rallies with a known winner) |
 | Players | 27 | 35 | 43 |
 
 **Verified:** all 8 of ShuttleSet22's 2021 matches are byte-identical duplicates of
