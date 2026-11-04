@@ -13,13 +13,15 @@ _Generated 2026-11-04 by `python -m tactics report --player 'Viktor AXELSEN'`._
 
 ## Top insights
 
-Where Axelsen differs most from typical pros, among patterns a coach can act on mid-match. Ranked by the smallest difference the data still supports (the 95% interval bound nearest zero), with at most 2 per table.
+Where Axelsen differs most from typical pros, among patterns a coach can act on mid-match. Ranked by the smallest difference the data still supports (the 95% interval bound nearest zero), with at most 2 per table. Only patterns selected in at least 50% of the leave-one-match-out folds are ranked (the top-5 is re-selected 20 times, each time without one match); the rest are listed under 'less stable'. `tentative` = the interval on the difference is wider than 20 points or n is under 60.
 
-1. When opponents play anything to Axelsen's body, Axelsen loses the point within two shots 7% of the time (n=97, 95% CI 4%-14%); typical pros lose 20% after the same shot (difference -13 points, 95% CI -18 to -5, n=635).
-2. When opponents play a net shot to Axelsen's front forehand, Axelsen loses the point within two shots 7% of the time (n=751, 95% CI 6%-10%); typical pros lose 14% after the same shot (difference -7 points, 95% CI -8 to -4, n=6410).
-3. When opponents smash to Axelsen's mid forehand, Axelsen loses the point within two shots 16% of the time (n=472, 95% CI 13%-19%); typical pros lose 23% after the same shot (difference -7 points, 95% CI -11 to -4, n=3544).
-4. In game 3, when opponents clear, wherever it lands, Axelsen loses the point within two shots 24% of the time (n=46, 95% CI 14%-38%); typical pros lose 11% after the same shot (difference +13 points, 95% CI +3 to +28, n=904).
-5. When Axelsen plays anything to the opponent's mid forehand, Axelsen loses the point within two shots 6% of the time (n=1342, 95% CI 5%-7%); typical pros lose 10% after the same shot (difference -4 points, 95% CI -5 to -2, n=10215).
+| #   | insight                                                                                                                                                                                                                                 | stable in      | flag      |
+|:----|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------|:----------|
+| 1   | When opponents play anything to Axelsen's body, Axelsen loses the point within two shots 7% of the time (n=97, 95% CI 4%-14%); typical pros lose 20% after the same shot (difference -13 points, 95% CI -18 to -5, n=635).              | 11 of 20 folds |           |
+| 2   | When opponents play a net shot to Axelsen's front forehand, Axelsen loses the point within two shots 7% of the time (n=751, 95% CI 6%-10%); typical pros lose 14% after the same shot (difference -7 points, 95% CI -8 to -4, n=6410).  | 20 of 20 folds |           |
+| 3   | When opponents smash to Axelsen's mid forehand, Axelsen loses the point within two shots 16% of the time (n=472, 95% CI 13%-19%); typical pros lose 23% after the same shot (difference -7 points, 95% CI -11 to -4, n=3544).           | 15 of 20 folds |           |
+| 4   | In game 3, when opponents clear, wherever it lands, Axelsen loses the point within two shots 24% of the time (n=46, 95% CI 14%-38%); typical pros lose 11% after the same shot (difference +13 points, 95% CI +3 to +28, n=904).        | 18 of 20 folds | tentative |
+| 5   | When Axelsen plays anything to the opponent's mid forehand, Axelsen loses the point within two shots 6% of the time (n=1342, 95% CI 5%-7%); typical pros lose 10% after the same shot (difference -4 points, 95% CI -5 to -2, n=10215). | 10 of 20 folds |           |
 
 ## How to play against Axelsen
 
@@ -339,9 +341,9 @@ First 4 strokes:
 
 ## Expected points (xP)
 
-xP is P(the hitter wins the rally | the shot just played), from a model trained on 80 development matches and checked on the 14 holdout matches (`docs/XP.md`). Every number here uses **xP-pre**, which sees only what is known before the shuttle lands (shot type, how it was hit, both players' positions, the receiver's distance from base, stroke index); chosen model: logistic. Based on 7701 of Axelsen's strokes in 1374 rallies.
+**Read this first: xP from shot and position data has no signal mid-rally in elite singles (holdout AUC 0.50 on strokes that did not end the rally).** The same features reach AUC 0.79 only on final strokes, where the task is classifying how an already-decisive stroke ends (winner or error), not predicting a rally. Nothing in this section is a working expected-points model. The tables stay because the 'Finishing' one is a real execution measure and the others show what a chance-level model does to per-shot claims.
 
-**Read this first.** On the holdout, xP-pre is at chance on strokes that did not end the rally (AUC 0.50) and informative only on the final stroke (AUC 0.79). Mid-rally, the model's expectation is therefore close to the base rate for every shot, and 'points above expectation' mostly measures how often the player wins rallies containing that shot. The column 'vs own overall' removes the player's general edge; the 'Finishing' table is where the model genuinely knows something.
+xP is P(the hitter wins the rally | the shot just played), from a model trained on 80 development matches and checked on the 14 holdout matches (`docs/XP.md`). Every number here uses **xP-pre**, which sees only what is known before the shuttle lands (shot type, how it was hit, both players' positions, the receiver's distance from base, stroke index); chosen model: logistic. Based on 7701 of Axelsen's strokes in 1374 rallies. Mid-rally the model's expectation is close to the base rate for every shot, so 'points above expectation' mostly measures how often the player wins rallies containing that shot; the column 'vs own overall' removes the player's general edge.
 
 ![calibration](Viktor_AXELSEN_img/xp_calibration.png)
 
