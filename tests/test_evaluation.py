@@ -34,3 +34,12 @@ def test_leave_one_out_pools_only_selected_folds():
     assert "selected in" in text and "Verdicts:" in text
     summary = evaluation.summary_table([res, res_o])
     assert list(summary.scheme) == ["lomo", "looo"]
+
+
+def test_selection_frequency_counts_every_fold():
+    df = synthetic_strokes()
+    freq = evaluation.selection_frequency(df, "X", AnalysisSettings(), k=5)
+    assert list(freq.columns) == ["analysis", "key", "selected_folds", "folds"]
+    assert (freq.folds == 2).all() and freq.selected_folds.between(1, 2).all()
+    planted = freq[freq.key == "faced push_rush -> rear_bh"]
+    assert len(planted) == 1 and int(planted.selected_folds.iloc[0]) == 2

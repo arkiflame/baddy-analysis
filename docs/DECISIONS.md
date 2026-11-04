@@ -214,3 +214,20 @@ top-5 for the five evaluated players (25 insights). Front/mid at 2.5 m keeps 22 
 decides which strokes count as "to the body" and therefore moves body-zone rows in and out of
 the top-5, so body-zone insights should be read as "at 0.5 m" claims. Defaults unchanged; the
 report states the thresholds it used.
+
+## Review fixes before the merge (2026-11-04, late)
+
+### D27. Top insights are ranked only if their selection is stable; tentative flag
+* The report's top-5 now comes from the 10 best-ranked candidates on the full data, keeping
+  only those selected in at least 50% of the leave-one-match-out folds (the top-5 re-selected
+  once per match of the player, same folds and same k as `tactics evaluate`, so the "selected
+  in X of N folds" counts agree between the report and `docs/EVALUATION.md`). The unstable
+  ones are listed under "Less stable" with their fold counts, as candidates rather than findings.
+* Any ranked insight whose Newcombe interval on the difference is wider than 20 points or
+  whose n is under 60 is flagged `tentative`. The thresholds are constants in `report.py`
+  (`MIN_STABLE_SHARE`, `TENTATIVE_CI_WIDTH`, `TENTATIVE_MIN_N`).
+* `tactics evaluate` still scores the plain data-ranked top-5 (it is what the stability check
+  is computed on; filtering by stability inside the evaluation would be selecting on the test).
+  `tactics report --no-stability` skips the folds (about 1 minute for a 20-match player).
+* Reason: the leave-one-out results showed several top-5 rows selected in only half of the
+  folds; a coach reading the top-5 should see that, not discover it in the evaluation doc.

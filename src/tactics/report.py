@@ -32,6 +32,12 @@ from tactics.stats import fmt_rate  # noqa: E402
 TOP_K = 5
 PER_FAMILY = 2  # shot-and-zone rows per table
 PER_SINGLE_FAMILY = 1  # shot-alone / zone-alone rows per table (large n, coarse advice)
+STABILITY_POOL = 2 * TOP_K  # candidates checked for selection stability (D27)
+MIN_STABLE_SHARE = (
+    0.5  # ranked only if selected in at least this share of leave-one-match-out folds
+)
+TENTATIVE_CI_WIDTH = 0.20  # flagged 'tentative' if the interval on the difference is wider (points)
+TENTATIVE_MIN_N = 60  # ... or the player's n is smaller
 
 # ---------------------------------------------------------------------------------------
 # Insight selection
@@ -56,6 +62,40 @@ def top_insights(rep: PlayerReport, k: int = TOP_K, per_family: int = PER_FAMILY
         if len(chosen) == k:
             break
     return pd.DataFrame(chosen).reset_index(drop=True) if chosen else cand.head(0)
+
+
+def tentative(row: pd.Series) -> bool:
+    """An insight whose interval on the difference is wider than TENTATIVE_CI_WIDTH or whose
+    n is under TENTATIVE_MIN_N: shown, but marked (D27)."""
+    return bool((row.delta_hi - row.delta_lo) > TENTATIVE_CI_WIDTH or row.n < TENTATIVE_MIN_N)
+
+
+def rank_with_stability(
+    rep: PlayerReport,
+    stability: pd.DataFrame | None,
+    k: int = TOP_K,
+    pool: int = STABILITY_POOL,
+    min_share: float = MIN_STABLE_SHARE,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Top-k among the `pool` best candidates, keeping only those selected in at least
+    `min_share` of the leave-one-match-out folds (`evaluation.selection_frequency`); the
+    pool's unstable candidates come back as the second frame. Both carry `selected_folds`,
+    `folds` and `tentative`. Without a stability table the plain ranking is returned."""
+    cand = top_insights(rep, k=pool).copy()
+    if cand.empty:
+        return cand, cand
+    cand["tentative"] = [tentative(r) for _, r in cand.iterrows()]
+    if stability is None or stability.empty:
+        cand["selected_folds"], cand["folds"] = 0, 0
+        return cand.head(k).reset_index(drop=True), cand.head(0)
+    cols = ["analysis", "key", "selected_folds", "folds"]
+    cand = cand.merge(stability[cols], on=["analysis", "key"], how="left")
+    folds = int(stability.folds.max())
+    cand["selected_folds"] = cand.selected_folds.fillna(0).astype(int)
+    cand["folds"] = folds
+    stable = cand.selected_folds >= min_share * folds
+    top = cand[stable].head(k).reset_index(drop=True)
+    return top, cand[~stable].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------------------
@@ -322,6 +362,22 @@ def coach_sections(
 # ---------------------------------------------------------------------------------------
 
 
+def top_insights_table(
+    top: pd.DataFrame, player: str, s: AnalysisSettings, with_folds: bool = True
+) -> str:
+    """Markdown table: rank, the insight sentence, 'stable in X of N folds', tentative flag."""
+    if top.empty:
+        return "_No pattern passes the sample-size, interval and stability tests._\n"
+    rows = []
+    for i, row in top.iterrows():
+        rec = {"#": i + 1, "insight": describe(row, player, s)}
+        if with_folds:
+            rec["stable in"] = f"{int(row.selected_folds)} of {int(row.folds)} folds"
+        rec["flag"] = "tentative" if row.tentative else ""
+        rows.append(rec)
+    return pd.DataFrame(rows).to_markdown(index=False, disable_numparse=True) + "\n"
+
+
 def _flag(d: pd.DataFrame) -> np.ndarray:
     return np.where(
         ~d.reliable,
@@ -455,13 +511,14 @@ def write_report(
     players_cfg: PlayerConfig,
     command: str,
     extra_sections: list[str] | None = None,
+    stability: pd.DataFrame | None = None,
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     name = slug(rep.player)
     path = out_dir / f"{name}.md"
     r, ps = rep.rallies, rep.strokes
     me = surname(rep.player)
-    top = top_insights(rep)
+    top, unstable = rank_with_stability(rep, stability)
     against, fix = coach_sections(rep, s)
     n_hold = int(r[is_holdout(r.match_id)].match_id.nunique())
     base_lo, base_hi = _ci(int(r.player_won.sum()), len(r))
@@ -492,16 +549,35 @@ def write_report(
     )
 
     L.append("## Top insights\n")
+    stability_note = ""
+    if stability is not None and not top.empty:
+        stability_note = (
+            f"Only patterns selected in at least {MIN_STABLE_SHARE:.0%} of the "
+            f"leave-one-match-out folds are ranked (the top-{TOP_K} is re-selected "
+            f"{int(top.folds.max())} times, each time without one match); the rest are listed "
+            f"under 'less stable'. "
+        )
     L.append(
         f"Where {me} differs most from typical pros, among patterns a coach can act on mid-match. "
         f"Ranked by the smallest difference the data still supports (the 95% interval bound "
-        f"nearest zero), with at most {PER_FAMILY} per table.\n"
+        f"nearest zero), with at most {PER_FAMILY} per table. {stability_note}"
+        f"`tentative` = the interval on the difference is wider than "
+        f"{TENTATIVE_CI_WIDTH * 100:.0f} points or n is under {TENTATIVE_MIN_N}.\n"
     )
-    if top.empty:
-        L.append("_No pattern passes the sample-size and interval tests._\n")
-    for i, row in top.iterrows():
-        L.append(f"{i + 1}. {describe(row, rep.player, s)}")
-    L.append("")
+    L.append(top_insights_table(top, rep.player, s, with_folds=stability is not None))
+    if not unstable.empty:
+        L.append("### Less stable\n")
+        L.append(
+            f"Among the {STABILITY_POOL} best-ranked patterns on the full data, these are "
+            f"selected in fewer than half of the leave-one-match-out folds; read them as "
+            f"candidates, not findings.\n"
+        )
+        for _, row in unstable.iterrows():
+            L.append(
+                f"- {describe(row, rep.player, s)} Selected in {int(row.selected_folds)} of "
+                f"{int(row.folds)} folds{'; tentative' if row.tentative else ''}."
+            )
+        L.append("")
 
     L.append(f"## How to play against {me}\n")
     L.append(

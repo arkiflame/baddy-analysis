@@ -74,3 +74,31 @@ def test_bullets_for_every_shape(rep):
             text = against_bullet(row, "X", s) + fix_bullet(row, "X", s) + describe(row, "X", s)
             assert "'s anything" not in text and "  " not in text
     assert "In game 3" in describe(row, "X", s)
+
+
+def test_stability_ranking_and_tentative_flag(rep):
+    from tactics.report import rank_with_stability, tentative, top_insights_table
+
+    s = AnalysisSettings()
+    pool = top_insights(rep, k=10)
+    planted = pool.iloc[0]
+    # the planted pattern is stable, everything else in the pool was selected in 1 of 4 folds
+    stab = pool[["analysis", "key"]].copy()
+    stab["selected_folds"] = [4] + [1] * (len(pool) - 1)
+    stab["folds"] = 4
+    top, unstable = rank_with_stability(rep, stab, k=5)
+    assert len(top) == 1 and top.iloc[0].key == planted.key
+    assert int(top.iloc[0].selected_folds) == 4 and len(unstable) == len(pool) - 1
+    table = top_insights_table(top, "X", s)
+    assert "4 of 4 folds" in table and "stable in" in table
+    # without a stability table the plain ranking comes back
+    plain, rest = rank_with_stability(rep, None, k=5)
+    assert len(plain) == min(5, len(pool)) and rest.empty
+    # tentative: wide interval on the difference or n under 60
+    row = planted.copy()
+    row["n"], row["delta_lo"], row["delta_hi"] = 100, 0.02, 0.10
+    assert not tentative(row)
+    row["n"] = 59
+    assert tentative(row)
+    row["n"], row["delta_hi"] = 100, 0.25
+    assert tentative(row)

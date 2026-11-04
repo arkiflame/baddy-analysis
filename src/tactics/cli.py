@@ -84,7 +84,13 @@ def cmd_report(args) -> int:
             res,
             img.relative_to(out_dir).as_posix(),
         )
-    path = write_report(rep, out_dir, s, zcfg, load_player_config(), command, extra)
+    stability = None
+    if not args.no_stability:
+        from tactics.evaluation import selection_frequency
+        from tactics.report import TOP_K
+
+        stability = selection_frequency(df, args.player, s, k=TOP_K)
+    path = write_report(rep, out_dir, s, zcfg, load_player_config(), command, extra, stability)
     print(f"wrote {path}")
     return 0
 
@@ -152,6 +158,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-positions", action="store_true", help="skip the position-map section")
     sp.add_argument("--no-habits", action="store_true", help="skip the habits / set-plays section")
     sp.add_argument("--no-xp", action="store_true", help="skip the expected-points section")
+    sp.add_argument(
+        "--no-stability",
+        action="store_true",
+        help="skip the leave-one-match-out stability check of the top insights (faster)",
+    )
     common(sp)
     sp.set_defaults(func=cmd_report)
 

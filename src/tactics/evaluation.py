@@ -120,6 +120,42 @@ def holdout_replication(
     )
 
 
+def _units(mine: pd.DataFrame, player: str, by: str) -> dict[str, set[str]]:
+    """Fold -> match ids held out: one per match ('match') or one per opponent ('opponent')."""
+    if by == "match":
+        return {m: {m} for m in sorted(mine.match_id.astype(str).unique())}
+    opp = np.where(mine.hitter == player, mine.receiver.astype(str), mine.hitter.astype(str))
+    return {o: set(mine[opp == o].match_id.astype(str).unique()) for o in sorted(set(opp.tolist()))}
+
+
+def selection_frequency(
+    df: pd.DataFrame,
+    player: str,
+    s: AnalysisSettings | None = None,
+    k: int = 5,
+    by: str = "match",
+) -> pd.DataFrame:
+    """How often each pattern enters the top-k when one match (or opponent) is left out.
+
+    One row per pattern selected in at least one fold: analysis, key, selected_folds, folds.
+    The report ranks only patterns selected in at least half of the leave-one-match-out folds
+    and lists the rest as "less stable" (D27). Same folds and the same k as `leave_one_out`,
+    so the counts match the ones printed by `tactics evaluate`.
+    """
+    s = s or AnalysisSettings()
+    units = _units(_player_matches(df, player), player, by)
+    counts: dict[tuple[str, str], int] = {}
+    for matches in units.values():
+        held = df.match_id.astype(str).isin(matches)
+        for _, r in top_insights(analyse_player(df[~held], player, s), k=k).iterrows():
+            counts[(r.analysis, r.key)] = counts.get((r.analysis, r.key), 0) + 1
+    rows = [
+        {"analysis": a, "key": key, "selected_folds": c, "folds": len(units)}
+        for (a, key), c in counts.items()
+    ]
+    return pd.DataFrame(rows, columns=["analysis", "key", "selected_folds", "folds"])
+
+
 def leave_one_out(
     df: pd.DataFrame,
     player: str,
@@ -133,13 +169,7 @@ def leave_one_out(
     full = analyse_player(df, player, s)
     top = top_insights(full, k=k)
     mine = _player_matches(df, player)
-    if by == "match":
-        units = {m: {m} for m in sorted(mine.match_id.astype(str).unique())}
-    else:
-        opp = np.where(mine.hitter == player, mine.receiver.astype(str), mine.hitter.astype(str))
-        units = {
-            o: set(mine[opp == o].match_id.astype(str).unique()) for o in sorted(set(opp.tolist()))
-        }
+    units = _units(mine, player, by)
     pooled: dict[tuple[str, str], dict] = {
         (r.analysis, r.key): {"selected": 0, "wins": 0, "n": 0} for _, r in top.iterrows()
     }
