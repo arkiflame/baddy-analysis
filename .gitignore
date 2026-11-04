@@ -1,0 +1,37 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# --- Data: never commit datasets, videos or weights -------------------------
+# Raw downloads (ShuttleSet lives in data/raw/CoachAI-Projects, re-fetched by
+# `python -m tactics fetch`)
+data/raw/
+# Any intermediate / cached tables
+data/processed/
+# Match footage (M2+)
+data/videos/
+*.mp4
+*.mov
+*.avi
+*.mkv
+# Model weights (M2+)
+weights/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+# Generated reports
+outputs/*
+!outputs/.gitkeep
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

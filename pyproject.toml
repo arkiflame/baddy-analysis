@@ -1,0 +1,37 @@
+[project]
+name = "tactics"
+version = "0.1.0"
+description = "Badminton tactical analyzer: finds the rally patterns that win and lose points for a player"
+readme = "README.md"
+authors = [
+    { name = "Matthew Yu", email = "matthew.yu.archi@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scipy>=1.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+tactics = "tactics.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
