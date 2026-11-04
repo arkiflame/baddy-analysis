@@ -43,20 +43,26 @@ def main() -> int:
     show = table.copy()
     for c in ("accuracy", "log_loss", "brier", "auc"):
         show[c] = show[c].map(lambda v: f"{v:.3f}")
+    timing = ", ".join(f"{k} {v:.0f} s" for k, v in res["timing"].items())
     md = [
         "# M3 baseline results\n",
         f"Command: `{res['command']}`  ",
-        f"Device: {res['device']}; wall time {res['wall_seconds'] / 60:.1f} min "
-        f"(logistic {res['timing']['logistic_seconds']:.0f} s, GRU total {res['timing']['gru_total_seconds']:.0f} s)\n",
-        "## Data\n",
-        pd.Series(res["counts"]).to_frame("value").to_markdown(),
-        "\n\n## Metrics on the 14 holdout matches\n",
+        f"Device: {res['device']}; wall time {res['wall_seconds'] / 60:.1f} min ({timing})\n",
+        "## Settings\n",
+        "\n".join(f"- **{k}**: {v}" for k, v in res["settings"].items()),
+        "\n\n## Data\n",
+        pd.Series({k: v for k, v in res["counts"].items() if not isinstance(v, dict)}).to_frame("value").to_markdown(),
+        f"\n\nP(server wins | last pre-final stroke by server / receiver), train: "
+        f"{res['counts']['last_hitter_rates_prefinal_train']}\n",
+        "\n## Metrics on the 14 holdout matches\n",
         show.to_markdown(index=False),
         "\n\n## GRU config\n",
         pd.Series(res["gru_config"]).to_frame("value").to_markdown(),
-        "\n\n## GRU validation curve (seed 0)\n",
-        pd.DataFrame(res["gru_histories"][0]).to_markdown(index=False),
+        "\n\n## GRU validation curves (seed 0)\n",
     ]
+    for key, hist in res["gru_histories"].items():
+        if key.endswith("seed0"):
+            md.append(f"\n{key}\n\n" + pd.DataFrame(hist).to_markdown(index=False))
     (OUT / "results.md").write_text("\n".join(md), encoding="utf-8")
     dump = {k: v for k, v in res.items() if k != "table"}
     dump["table"] = table.to_dict(orient="records")
