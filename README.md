@@ -42,6 +42,38 @@ A report (example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSE
 Zones are computed from the **receiver's** point of view with a per-player handedness table, so
 "rear backhand" means the receiver's backhand corner. Every threshold lives in `config/zones.toml`.
 
+## Web UI (Milestone 4a)
+
+`web/` is a statically exported Next.js site (App Router, TypeScript, Tailwind) that renders the
+same reports for every player with at least 3 matches: a searchable player list, a player page
+(scouting summary on top, tabs for insights, habits, set plays, position maps and xP), an
+interactive SVG court drawn to scale with the seven coach zones coloured by the player-vs-typical-pro
+difference and hover / keyboard tooltips with n and the 95% interval, and a Methods page. The site
+computes nothing: every number comes from JSON written by `scripts/export_web.py`, which calls the
+same functions as the Markdown report. Tentative and less-stable insights are marked, every rate
+carries its n and interval, light and dark mode, responsive to phone width, no meaning carried by
+colour alone (D28).
+
+```powershell
+uv run python scripts/export_web.py          # -> web/public/data/index.json + players/*.json (about 20 min)
+cd web
+npm install
+npm run dev                                   # http://localhost:3000
+npm run build                                 # static site in web/out
+```
+
+### Deploying to Vercel
+
+1. Make sure `web/public/data/` is committed (the export is not run on Vercel: it needs the dataset
+   and about 20 minutes). Re-run `scripts/export_web.py` and commit whenever the analysis changes.
+2. On vercel.com, **Add New Project**, import this repository, and set **Root Directory** to `web`.
+   Framework preset: Next.js (detected). Build command `npm run build`, output directory `out`
+   (the `output: "export"` setting in `web/next.config.ts` makes the build static; Vercel serves
+   `out/` as plain files). No environment variables are needed.
+3. Deploy. Every push to the production branch rebuilds; preview deployments are created for other
+   branches. The site has no server component at runtime, so it can equally be hosted on GitHub
+   Pages or any static host by uploading `web/out/`.
+
 ## Results (all numbers from commands in this repo, 2026-11-04)
 
 **Viktor Axelsen** (20 matches, 1,394 rallies, 58.1% rally win rate), `python -m tactics report --player "Viktor AXELSEN"`:
@@ -103,10 +135,13 @@ src/tactics/
   xp.py          expected points        live_state.py   live advantage experiment
   evaluation.py  three replication schemes            splits.py   match-level holdout ids
   outcome_model.py  M3 sequence models  cli.py          the four commands
+  webexport.py   JSON for the web UI (same functions as the report)
   tools/         court calibration, video labeller, TrackNetV3 wrapper (M2)
 config/          zones.toml (thresholds), players.toml (handedness with sources)
 scripts/         fetch_*.py, zone_diagnostics.py, m3_baseline.py, xp_baseline.py, live_state.py,
-                 threshold_sensitivity.py
+                 threshold_sensitivity.py, export_web.py
+web/             Next.js static site (src/app pages, src/components Court / PlayerView / Tables,
+                 public/data the exported JSON)
 docs/            DATASET.md, DECISIONS.md (D1-D26), EVALUATION.md, XP.md, M3_BASELINE.md,
                  ROADMAP.md, WALKTHROUGH.md (modules, 20 interview questions)
 tests/           72 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
@@ -119,8 +154,9 @@ the choices made during the builds with their reasoning.
 
 ## Roadmap
 
-M2 own footage to stroke data; M3 sequence model to rank patterns; M4 FastAPI + Next.js
-dashboard; M5 varsity-team users and doubles. Details in `docs/ROADMAP.md`.
+M2 own footage to stroke data; M3 sequence model to rank patterns; M4 web UI (4a, the static
+scouting site, is done; 4b would add a backend for uploads); M5 varsity-team users and doubles.
+Details in `docs/ROADMAP.md`.
 
 ## Credits and licences
 

@@ -234,3 +234,23 @@ report states the thresholds it used.
   `tactics report --no-stability` skips the folds (about 1 minute for a 20-match player).
 * Reason: the leave-one-out results showed several top-5 rows selected in only half of the
   folds; a coach reading the top-5 should see that, not discover it in the evaluation doc.
+
+## web-ui branch (Milestone 4a, 2026-11-04/05)
+
+### D28. Web UI: static export of precomputed JSON; the site computes nothing
+* `scripts/export_web.py` writes `web/public/data/index.json` and one file per player with at
+  least 3 matches, using the same functions as the Markdown report (`webexport.py` only reshapes
+  tables into records). The replication schemes are run for players with at least 9 matches (six
+  players: the five of `docs/EVALUATION.md` plus Kento Momota, so the Methods page totals differ
+  from that document) and stored in `index.json` for the Methods page; the
+  live-advantage verdicts are read from `outputs/m3/live_state*.json` if present, never recomputed.
+* The Next.js site (`web/`, App Router, TypeScript, Tailwind v4) is built with `output: "export"`,
+  reads the JSON at build time, and contains no arithmetic beyond number formatting. Rule: the UI
+  never shows a number the export did not produce. The JSON is committed so a Vercel build needs
+  neither the dataset nor Python.
+* Honesty marks: every rate shows n and its 95% interval; `tentative` and `less stable` are text
+  badges with an icon; court zones whose interval includes zero are hatched; the body zone is
+  drawn as a circle at the player's base position and labelled as receiver-relative.
+* Colour: the reference data-viz palette (blue sequential ramp, blue <-> red diverging pair with a
+  grey midpoint, separate dark-mode steps); meaning is always also carried by text or pattern.
+* Lighthouse accessibility: see the line appended below after the run.

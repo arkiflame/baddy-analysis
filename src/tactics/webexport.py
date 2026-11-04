@@ -33,6 +33,7 @@ from tactics.report import (
     fix_bullet,
     rank_with_stability,
     surname,
+    tentative,
 )
 from tactics.splits import is_holdout
 
@@ -111,7 +112,7 @@ def insight_record(row: pd.Series, player: str, s: AnalysisSettings, rank: int |
         **{c: _clean(row[c]) for c in RATE_COLS if c in row.index},
         "selected_folds": _clean(row.get("selected_folds", None)),
         "folds": _clean(row.get("folds", None)),
-        "tentative": bool(row.get("tentative", False)),
+        "tentative": bool(row["tentative"]) if "tentative" in row.index else tentative(row),
     }
     rec["stable"] = (
         rec["selected_folds"] is not None

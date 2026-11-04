@@ -328,3 +328,37 @@ advantage bar was built (D24). The report's momentum view is xP per shot.
     points, or n under 60); and it separated REPLICATES from SAME DIRECTION, so an insight
     supported by one or two matches is labelled as such instead of being called replicated
     because a wide holdout interval happened to overlap.
+
+## 8. The web UI (Milestone 4a, `web/` and `src/tactics/webexport.py`)
+
+What: a statically exported Next.js site. `scripts/export_web.py` runs the same analysis functions
+as the Markdown report for every player with at least 3 matches and writes one JSON file per
+player plus `index.json`; the site reads those files at build time and renders them. Pages: a
+searchable player list with coverage, a player page (scouting summary first, then tabs), a
+Methods page. The court is an SVG drawn in metres (real lines, the three depth bands x
+forehand / backhand side, the body circle at the player's base position) with zones coloured by
+the difference from typical pros and tooltips showing n and the 95% interval; the same SVG shows
+the position grids as a heatmap. Why static: nothing on the site needs a server, every number is
+precomputed and reviewable in the repo, and a static site is the cheapest thing to host and the
+hardest to break. Why the site computes nothing: the honesty rule ("never show a number the
+export didn't produce") is easy to audit when the only arithmetic in the frontend is formatting.
+
+21. *Why export JSON instead of calling the Python code from the site?*  Separation of trust: the
+    numbers are produced once, by the code that is tested, and committed; the UI is a renderer
+    that can be reviewed for "does it show n and the interval next to every number" without
+    reading any statistics code. It also makes the site static, so it has no runtime, no secrets
+    and nothing to keep alive. The cost is a 20-minute export whenever the analysis changes, and a
+    JSON schema that the TypeScript types mirror by hand.
+22. *How does the court avoid lying with colour?*  Three ways. The diverging fill (blue = loses
+    less than typical pros, red = loses more, grey midpoint) is reinforced by the printed
+    difference in points and the n inside every zone, so a colour-blind reader loses nothing; zones
+    whose interval includes zero are hatched rather than coloured, so a strong-looking hue cannot
+    appear without a finding behind it; and a table with the same rows sits under the court. The
+    body zone is receiver-relative, so it is drawn as a circle at the player's base position and
+    labelled as such instead of being pretended into a fixed area of the court.
+23. *What did Lighthouse and the accessibility pass change?*  Tabs follow the WAI-ARIA pattern
+    (roving tab stop, arrow keys), every zone on the court is focusable with an aria-label that
+    reads the full sentence, the search input and radio groups have real labels, tooltips are
+    duplicated in text, contrast was chosen from a validated palette with separate dark-mode
+    steps, and the "tentative" and "less stable" marks are text badges with an icon. The score is
+    recorded with its command in `docs/DECISIONS.md` (D28), not quoted from memory.
