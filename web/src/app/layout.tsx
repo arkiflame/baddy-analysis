@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-full flex flex-col bg-page text-ink">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-ink"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-accent focus:px-4 focus:py-3 focus:text-accent-ink"
         >
           Skip to content
         </a>
@@ -34,14 +34,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             aria-label="Main"
             className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3"
           >
-            <Link href="/" className="text-lg font-semibold tracking-tight">
+            <Link href="/" className="py-2 text-lg font-semibold tracking-tight">
               Badminton scouting
             </Link>
-            <div className="flex items-center gap-4 text-sm">
-              <Link href="/" className="hover:underline">
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/" className="px-2 py-2 hover:underline">
                 Players
               </Link>
-              <Link href="/methods/" className="hover:underline">
+              <Link href="/methods/" className="px-2 py-2 hover:underline">
                 Methods
               </Link>
             </div>

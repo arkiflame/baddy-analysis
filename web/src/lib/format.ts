@@ -9,10 +9,11 @@ export const pctCi = (lo: number | null | undefined, hi: number | null | undefin
     : `${pct(lo)}–${pct(hi)}`;
 
 /** Difference in percentage points, with sign. */
-export const pts = (v: number | null | undefined): string =>
-  v === null || v === undefined || Number.isNaN(v)
-    ? "–"
-    : `${v > 0 ? "+" : ""}${(v * 100).toFixed(0)}`;
+export const pts = (v: number | null | undefined): string => {
+  if (v === null || v === undefined || Number.isNaN(v)) return "–";
+  const r = Math.round(v * 100);
+  return r > 0 ? `+${r}` : `${r === 0 ? 0 : r}`; // no "-0"
+};
 
 export const ptsCi = (lo: number | null | undefined, hi: number | null | undefined): string =>
   lo === null || lo === undefined || hi === null || hi === undefined

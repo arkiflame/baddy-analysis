@@ -32,7 +32,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-pressed={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="rounded border border-line bg-surface px-3 py-1.5 text-sm hover:bg-page"
+      className="rounded border border-line bg-surface px-3 py-2 text-sm hover:bg-page"
     >
       {dark ? "Light mode" : "Dark mode"}
     </button>

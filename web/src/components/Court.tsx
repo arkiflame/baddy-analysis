@@ -189,6 +189,8 @@ export function Court({
           const r = zoneRows.get(z.zone);
           const t = zoneTip(z.zone, z.x + z.w / 2, z.y + z.h / 2);
           const hatched = r && r.reliable && !r.signal;
+          // keep the rear labels above the doubles long service line (0.76 m from the baseline)
+          const cy = z.y + z.h > L - 0.76 ? Math.min(z.y + z.h / 2, L - 0.76 - 0.45) : z.y + z.h / 2;
           return (
             <g
               key={z.zone}
@@ -211,7 +213,7 @@ export function Court({
               )}
               <text
                 x={px(z.x + z.w / 2)}
-                y={py(z.y + z.h / 2) - 14}
+                y={py(cy) - 14}
                 textAnchor="middle"
                 fontSize="18"
                 fill="var(--ink)"
@@ -220,7 +222,7 @@ export function Court({
               </text>
               <text
                 x={px(z.x + z.w / 2)}
-                y={py(z.y + z.h / 2) + 12}
+                y={py(cy) + 12}
                 textAnchor="middle"
                 fontSize="22"
                 fontWeight="600"
@@ -230,7 +232,7 @@ export function Court({
               </text>
               <text
                 x={px(z.x + z.w / 2)}
-                y={py(z.y + z.h / 2) + 34}
+                y={py(cy) + 34}
                 textAnchor="middle"
                 fontSize="16"
                 fill="var(--ink-2)"

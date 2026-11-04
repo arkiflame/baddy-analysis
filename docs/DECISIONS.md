@@ -253,4 +253,4 @@ report states the thresholds it used.
   drawn as a circle at the player's base position and labelled as receiver-relative.
 * Colour: the reference data-viz palette (blue sequential ramp, blue <-> red diverging pair with a
   grey midpoint, separate dark-mode steps); meaning is always also carried by text or pattern.
-* Lighthouse accessibility: see the line appended below after the run.
+* Lighthouse (2026-11-04, `npx lighthouse http://localhost:3999/<page> --only-categories=accessibility,best-practices,performance --chrome-flags=--headless=new` against `npx serve out -l 3999` after `npm run build`): accessibility 100 on `/`, `/players/viktor-axelsen/` and `/methods/` (target: >= 90); best practices 96 on all three, the only failing audit being console 404s for Next's segment-prefetch `.txt` files under `serve`, which does not affect the pages; performance 100 / 98 / 100. Horizontal overflow checked at 390 px with puppeteer-core: scrollWidth equals the viewport on all three pages.
