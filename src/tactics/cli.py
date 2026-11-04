@@ -90,15 +90,18 @@ def cmd_report(args) -> int:
 
 
 def cmd_evaluate(args) -> int:
-    from tactics.evaluation import replicate, result_markdown
+    from tactics.evaluation import replicate_all, result_markdown, summary_table
 
     df = _load()
     s = _settings(args)
-    chunks = []
+    schemes = ("holdout", "lomo", "looo") if args.scheme == "all" else (args.scheme,)
+    chunks, results = [], []
     for player in args.player:
-        res = replicate(df, player, s, k=args.top)
-        chunks.append(result_markdown(res))
-    text = "\n".join(chunks)
+        res = replicate_all(df, player, s, k=args.top, schemes=schemes)
+        results += res
+        chunks += [result_markdown(r) for r in res]
+    summary = summary_table(results).to_markdown(index=False)
+    text = "\n".join(chunks) + "\n## Summary\n\n" + summary + "\n"
     print(text)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -155,6 +158,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("evaluate", help="holdout replication of the top insights")
     sp.add_argument("--player", required=True, action="append", help="repeatable")
     sp.add_argument("--top", type=int, default=5)
+    sp.add_argument(
+        "--scheme",
+        choices=("holdout", "lomo", "looo", "all"),
+        default="all",
+        help="holdout, leave-one-match-out, leave-one-opponent-out, or all (default)",
+    )
     sp.add_argument("--out", default=None, help="optional Markdown file to write")
     common(sp)
     sp.set_defaults(func=cmd_evaluate)

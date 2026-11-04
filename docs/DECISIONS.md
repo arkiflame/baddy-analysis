@@ -194,3 +194,23 @@ Per the brief, the result is reported in `docs/M3_BASELINE.md` and the bar is no
 report's momentum view is xP per shot. The code stays (`src/tactics/live_state.py`,
 `scripts/live_state.py`) so the experiment can be re-run when richer per-stroke features exist
 (shuttle speed, timing, contact height in metres).
+
+### D25. Replication: three schemes, one verdict rule, reference = typical pros
+The holdout scheme keeps ShuttleSet22's published split but tests each insight against the
+typical-pro reference it was selected on (not the player's own baseline, which the v2 ranking no
+longer uses). Two leave-one-out schemes were added because 1-3 holdout matches per player left
+most zone-level claims untestable: leave-one-match-out (select on the other matches, score the
+pattern on the held-out match, pool over the folds that selected it) and leave-one-opponent-out
+(all matches against one opponent held out, which catches "this is really one opponent's
+style"). Verdicts: REPLICATES (same direction and the Newcombe interval of the out-of-sample
+difference excludes zero), SAME DIRECTION (same sign, interval includes zero), FAILS (opposite
+sign), UNTESTABLE (< 10 out-of-sample instances). SAME DIRECTION is reported separately rather
+than folded into either neighbour. The selection count per fold is shown as a stability measure.
+
+### D26. Threshold sensitivity: front 2.5 m barely matters, body 0.75 m does
+`scripts/threshold_sensitivity.py` re-annotates with the D8 alternatives and recomputes the
+top-5 for the five evaluated players (25 insights). Front/mid at 2.5 m keeps 22 of 25; body at
+0.75 m keeps 16 of 25; both together 14 of 25 (`outputs/sensitivity.md`). The body radius
+decides which strokes count as "to the body" and therefore moves body-zone rows in and out of
+the top-5, so body-zone insights should be read as "at 0.5 m" claims. Defaults unchanged; the
+report states the thresholds it used.
