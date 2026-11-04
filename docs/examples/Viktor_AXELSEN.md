@@ -337,6 +337,97 @@ First 4 strokes:
 | O:short_service > P:net > O:lob > P:smash       | 51        | 13%     | 11% (n=4885)   | +3 (-0 to +7)         | 45% (32%-59%)  | 54%                |             |
 | O:short_service > P:net > O:net > P:lob         | 43        | 11%     | 9% (n=4885)    | +3 (-0 to +6)         | 51% (37%-65%)  | 44%                |             |
 
+## Expected points (xP)
+
+xP is P(the hitter wins the rally | the shot just played), from a model trained on 80 development matches and checked on the 14 holdout matches (`docs/XP.md`). Every number here uses **xP-pre**, which sees only what is known before the shuttle lands (shot type, how it was hit, both players' positions, the receiver's distance from base, stroke index); chosen model: logistic. Based on 7701 of Axelsen's strokes in 1374 rallies.
+
+**Read this first.** On the holdout, xP-pre is at chance on strokes that did not end the rally (AUC 0.50) and informative only on the final stroke (AUC 0.79). Mid-rally, the model's expectation is therefore close to the base rate for every shot, and 'points above expectation' mostly measures how often the player wins rallies containing that shot. The column 'vs own overall' removes the player's general edge; the 'Finishing' table is where the model genuinely knows something.
+
+![calibration](Viktor_AXELSEN_img/xp_calibration.png)
+
+Axelsen's overall points above expectation: +0.085 per rally (95% CI +0.059 to +0.111, n=1374); other pros -0.005. Intervals are over rallies (every stroke in a rally shares its outcome).
+
+**Points above expectation by shot and the court band it was hit from** (actual outcome minus xP, averaged within each rally, then over rallies; 'typical pros' = all other players hitting the same shot from the same band):
+
+| shot, hit from         | rallies   | xP    | points above expectation   | typical pros    | difference (95% CI)       | vs own overall (95% CI)   | flag   |
+|:-----------------------|:----------|:------|:---------------------------|:----------------|:--------------------------|:--------------------------|:-------|
+| smash from rear        | 569       | 0.544 | +0.105 (+0.066 to +0.144)  | -0.016 (n=4913) | +0.121 (+0.080 to +0.163) | +0.020 (-0.027 to +0.067) | signal |
+| defensive from mid     | 663       | 0.466 | +0.089 (+0.052 to +0.127)  | -0.016 (n=5867) | +0.105 (+0.065 to +0.145) | +0.004 (-0.041 to +0.050) | signal |
+| long_service from mid  | 138       | 0.488 | +0.135 (+0.053 to +0.217)  | -0.014 (n=1142) | +0.149 (+0.063 to +0.236) | +0.050 (-0.036 to +0.136) | signal |
+| lob from mid           | 702       | 0.477 | +0.090 (+0.054 to +0.127)  | -0.007 (n=4434) | +0.098 (+0.058 to +0.137) | +0.005 (-0.040 to +0.050) | signal |
+| lob from front         | 457       | 0.488 | +0.077 (+0.031 to +0.122)  | -0.020 (n=4074) | +0.097 (+0.049 to +0.145) | -0.008 (-0.061 to +0.044) | signal |
+| short_service from mid | 481       | 0.501 | +0.085 (+0.041 to +0.129)  | -0.010 (n=4279) | +0.095 (+0.048 to +0.141) | -0.000 (-0.051 to +0.051) | signal |
+| net from mid           | 751       | 0.484 | +0.079 (+0.043 to +0.114)  | -0.005 (n=6692) | +0.084 (+0.046 to +0.121) | -0.006 (-0.050 to +0.038) | signal |
+| net from front         | 243       | 0.494 | +0.078 (+0.015 to +0.140)  | -0.002 (n=3663) | +0.080 (+0.015 to +0.144) | -0.007 (-0.075 to +0.060) | signal |
+| drop from mid          | 50        | 0.523 | +0.117 (-0.021 to +0.255)  | -0.036 (n=1086) | +0.153 (+0.012 to +0.294) | +0.032 (-0.109 to +0.172) | signal |
+| push_rush from mid     | 300       | 0.532 | +0.045 (-0.011 to +0.100)  | -0.019 (n=3040) | +0.064 (+0.005 to +0.122) | -0.040 (-0.102 to +0.021) | signal |
+| smash from mid         | 224       | 0.570 | +0.086 (+0.023 to +0.148)  | +0.017 (n=2155) | +0.069 (+0.003 to +0.135) | +0.001 (-0.067 to +0.068) | signal |
+| drop from rear         | 226       | 0.484 | +0.064 (-0.001 to +0.129)  | -0.004 (n=4294) | +0.068 (+0.001 to +0.134) | -0.021 (-0.091 to +0.049) | signal |
+
+By shot type alone:
+
+| shot          | rallies   | xP    | points above expectation   | typical pros    | difference (95% CI)       | vs own overall (95% CI)   | flag   |
+|:--------------|:----------|:------|:---------------------------|:----------------|:--------------------------|:--------------------------|:-------|
+| lob           | 890       | 0.480 | +0.084 (+0.051 to +0.117)  | -0.016 (n=7076) | +0.099 (+0.065 to +0.134) | -0.001 (-0.043 to +0.040) | signal |
+| net           | 851       | 0.487 | +0.082 (+0.049 to +0.115)  | -0.002 (n=8410) | +0.084 (+0.049 to +0.119) | -0.003 (-0.045 to +0.039) | signal |
+| smash         | 702       | 0.551 | +0.096 (+0.061 to +0.131)  | -0.009 (n=6321) | +0.105 (+0.068 to +0.142) | +0.011 (-0.033 to +0.055) | signal |
+| defensive     | 674       | 0.464 | +0.084 (+0.047 to +0.122)  | -0.015 (n=5964) | +0.100 (+0.060 to +0.139) | -0.001 (-0.046 to +0.045) | signal |
+| short_service | 482       | 0.501 | +0.086 (+0.042 to +0.130)  | -0.009 (n=4299) | +0.095 (+0.048 to +0.142) | +0.001 (-0.050 to +0.052) | signal |
+| push_rush     | 381       | 0.540 | +0.059 (+0.010 to +0.108)  | -0.007 (n=4217) | +0.065 (+0.014 to +0.116) | -0.026 (-0.082 to +0.029) | signal |
+| drop          | 261       | 0.491 | +0.072 (+0.012 to +0.133)  | -0.009 (n=4918) | +0.081 (+0.020 to +0.143) | -0.013 (-0.078 to +0.053) | signal |
+| drive         | 197       | 0.479 | +0.064 (-0.006 to +0.134)  | -0.001 (n=1903) | +0.065 (-0.008 to +0.138) | -0.021 (-0.095 to +0.053) |        |
+| clear         | 194       | 0.470 | +0.072 (+0.001 to +0.142)  | -0.010 (n=4492) | +0.081 (+0.009 to +0.154) | -0.013 (-0.089 to +0.062) | signal |
+| long_service  | 139       | 0.488 | +0.138 (+0.057 to +0.219)  | -0.014 (n=1161) | +0.152 (+0.066 to +0.238) | +0.053 (-0.032 to +0.138) | signal |
+
+**Finishing** (final strokes only, one per rally): given that Axelsen's stroke ended the rally, how often it was a winner rather than an error, minus what xP-pre expected from the shot type, position and the receiver's state.
+
+| final shot    | strokes   | xP    | points above expectation   | typical pros    | difference (95% CI)       | flag    |
+|:--------------|:----------|:------|:---------------------------|:----------------|:--------------------------|:--------|
+| smash         | 220       | 0.558 | +0.146 (+0.086 to +0.207)  | +0.043 (n=1737) | +0.104 (+0.039 to +0.168) | signal  |
+| lob           | 103       | 0.480 | -0.247 (-0.331 to -0.164)  | -0.306 (n=747)  | +0.059 (-0.029 to +0.146) |         |
+| defensive     | 89        | 0.449 | -0.359 (-0.420 to -0.299)  | -0.341 (n=1039) | -0.019 (-0.082 to +0.045) |         |
+| net           | 86        | 0.489 | -0.256 (-0.344 to -0.168)  | -0.315 (n=1142) | +0.059 (-0.031 to +0.150) |         |
+| push_rush     | 84        | 0.567 | +0.040 (-0.060 to +0.140)  | +0.020 (n=982)  | +0.020 (-0.085 to +0.124) |         |
+| drop          | 23        | 0.475 | -0.214 (-0.402 to -0.025)  | -0.204 (n=626)  | -0.010 (-0.201 to +0.181) | too few |
+| drive         | 18        | 0.471 | -0.305 (-0.490 to -0.120)  | -0.256 (n=195)  | -0.049 (-0.242 to +0.144) | too few |
+| clear         | 12        | 0.463 | -0.296 (-0.552 to -0.041)  | -0.241 (n=460)  | -0.055 (-0.312 to +0.202) | too few |
+| long_service  | 8         | 0.496 | -0.121 (-0.558 to +0.316)  | -0.343 (n=26)   | +0.221 (-0.226 to +0.668) | too few |
+| short_service | 1         | 0.491 | -0.491 (- to -)            | -0.395 (n=28)   | - (- to -)                | too few |
+
+**Situation quality**: mean xP of the shots Axelsen plays, by type (averaged per rally). A higher value means Axelsen tends to play that shot from positions the model likes, regardless of what happens next.
+
+| shot          | rallies   | mean xP                   | typical pros    | difference (95% CI)       | flag   |
+|:--------------|:----------|:--------------------------|:----------------|:--------------------------|:-------|
+| lob           | 890       | +0.480 (+0.479 to +0.481) | +0.479 (n=7076) | +0.001 (-0.000 to +0.002) |        |
+| net           | 851       | +0.487 (+0.485 to +0.488) | +0.486 (n=8410) | +0.000 (-0.001 to +0.002) |        |
+| smash         | 702       | +0.551 (+0.549 to +0.553) | +0.552 (n=6321) | -0.001 (-0.003 to +0.001) |        |
+| defensive     | 674       | +0.464 (+0.462 to +0.467) | +0.468 (n=5964) | -0.003 (-0.006 to -0.001) | signal |
+| short_service | 482       | +0.501 (+0.500 to +0.502) | +0.502 (n=4299) | -0.001 (-0.002 to -0.000) | signal |
+| push_rush     | 381       | +0.540 (+0.535 to +0.544) | +0.537 (n=4217) | +0.003 (-0.002 to +0.008) |        |
+| drop          | 261       | +0.491 (+0.487 to +0.495) | +0.489 (n=4918) | +0.002 (-0.002 to +0.006) |        |
+| drive         | 197       | +0.479 (+0.473 to +0.485) | +0.477 (n=1903) | +0.002 (-0.004 to +0.009) |        |
+| clear         | 194       | +0.470 (+0.466 to +0.474) | +0.462 (n=4492) | +0.007 (+0.003 to +0.012) | signal |
+| long_service  | 139       | +0.488 (+0.486 to +0.490) | +0.502 (n=1161) | -0.014 (-0.017 to -0.012) | signal |
+
+**xP added**: the change in Axelsen's win probability caused by each stroke (rally start = the training server win rate), summed over the player's strokes in a rally, and per shot type. With a model at chance mid-rally these are small by construction; they are reported for completeness.
+
+| measure            | rallies   | mean                      | typical pros     | difference (95% CI)       | flag   |
+|:-------------------|:----------|:--------------------------|:-----------------|:--------------------------|:-------|
+| xP added per rally | 1374      | -0.084 (-0.093 to -0.076) | -0.075 (n=13720) | -0.010 (-0.018 to -0.001) | signal |
+
+| shot          | rallies   | xP added per rally        | typical pros    | difference (95% CI)       | flag   |
+|:--------------|:----------|:--------------------------|:----------------|:--------------------------|:-------|
+| lob           | 890       | -0.077 (-0.082 to -0.072) | -0.051 (n=7076) | -0.025 (-0.030 to -0.020) | signal |
+| net           | 851       | -0.054 (-0.058 to -0.049) | -0.048 (n=8410) | -0.005 (-0.010 to -0.001) | signal |
+| smash         | 702       | +0.037 (+0.033 to +0.040) | +0.041 (n=6321) | -0.005 (-0.008 to -0.001) | signal |
+| defensive     | 674       | -0.002 (-0.006 to +0.002) | +0.008 (n=5964) | -0.010 (-0.015 to -0.006) | signal |
+| short_service | 482       | -0.000 (-0.001 to +0.001) | +0.001 (n=4299) | -0.001 (-0.002 to -0.000) | signal |
+| push_rush     | 381       | +0.020 (+0.014 to +0.026) | +0.024 (n=4217) | -0.004 (-0.010 to +0.003) |        |
+| drop          | 261       | -0.044 (-0.051 to -0.038) | -0.045 (n=4918) | +0.001 (-0.006 to +0.008) |        |
+| drive         | 197       | -0.025 (-0.034 to -0.017) | -0.036 (n=1903) | +0.011 (+0.002 to +0.020) | signal |
+| clear         | 194       | -0.078 (-0.089 to -0.068) | -0.084 (n=4492) | +0.006 (-0.005 to +0.017) |        |
+| long_service  | 139       | -0.013 (-0.015 to -0.011) | +0.001 (n=1161) | -0.014 (-0.017 to -0.012) | signal |
+
 ## Context (descriptive, not ranked)
 
 ### How points end

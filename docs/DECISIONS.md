@@ -170,3 +170,19 @@ Means carry t-intervals and differences Welch intervals.
   difference in share versus other pros in the same role. The win rate is shown but does not
   drive the ranking: with 30-200 rallies per opening its interval is wide.
 
+
+### D23. xP: two models, pre-landing for every per-player claim; rally-level intervals
+* xP-pre sees only what is known before the shuttle lands and is used for every per-player
+  number. xP-post adds the landing and is trained and scored on non-final strokes only, because
+  a final stroke's landing is the outcome; even clipping leaks (net errors become tight-net
+  landings). The leak is measured and reported (AUC 0.986 on final strokes with the zone
+  visible, `docs/XP.md`).
+* Hyper-parameters and the model family per feature set are chosen on a match-level validation
+  split inside the development matches; the 14 holdout matches are scored once.
+* Result: mid-rally xP is at chance (holdout AUC 0.50 on non-final strokes), informative only at
+  the final stroke (0.79). The report says so first, shows "vs own overall" next to "vs typical
+  pros", and adds a Finishing table (final strokes) where the model has signal. Per-player
+  intervals are over rallies, not strokes: all of a player's strokes in a rally share its outcome.
+* xP added keeps the model's value of the final stroke as the terminal state (not the realised
+  point), so it measures what the model believed, not hindsight; with a chance-level model it is
+  small by construction and labelled as such.

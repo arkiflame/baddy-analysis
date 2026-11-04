@@ -54,7 +54,7 @@ def cmd_players(args) -> int:
 
 
 def cmd_report(args) -> int:
-    from tactics import habits, positions
+    from tactics import habits, positions, xp
     from tactics.analyses import analyse_player
     from tactics.report import slug, surname, write_report
 
@@ -75,6 +75,15 @@ def cmd_report(args) -> int:
         )
     if not args.no_habits:
         extra += habits.section(habits.summarise(df, args.player, s), surname(args.player), s)
+    if not args.no_xp:
+        res = xp.run_experiment(df, zcfg)
+        img = xp.calibration_plot(res, out_dir / f"{slug(args.player)}_img" / "xp_calibration.png")
+        extra += xp.section(
+            xp.player_xp(res, args.player, s.rates.min_n),
+            surname(args.player),
+            res,
+            img.relative_to(out_dir).as_posix(),
+        )
     path = write_report(rep, out_dir, s, zcfg, load_player_config(), command, extra)
     print(f"wrote {path}")
     return 0
@@ -139,6 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--out", default=str(OUTPUTS), help="output directory (default outputs/)")
     sp.add_argument("--no-positions", action="store_true", help="skip the position-map section")
     sp.add_argument("--no-habits", action="store_true", help="skip the habits / set-plays section")
+    sp.add_argument("--no-xp", action="store_true", help="skip the expected-points section")
     common(sp)
     sp.set_defaults(func=cmd_report)
 
