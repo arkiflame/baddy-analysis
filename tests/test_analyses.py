@@ -45,14 +45,11 @@ def test_planted_pattern_ranks_first_against_typical_pros(rep):
 
 def test_only_actionable_tables_are_ranked(rep):
     fams = set(rep.insights.family)
-    assert fams <= {
-        "danger_hit",
-        "danger_faced",
-        "danger_hit@game3",
-        "danger_faced@game3",
-        "danger_hit@pressure",
-        "danger_faced@pressure",
-    }
+    allowed = set()
+    for role in ("danger_hit", "danger_faced"):
+        for split in ("", "@game3", "@pressure"):
+            allowed |= {role + split, role + "_single" + split}
+    assert fams <= allowed
     assert not rep.insights.analysis.str.startswith(("last", "length", "game", "serving")).any()
 
 
@@ -78,8 +75,8 @@ def test_unknown_shot_type_never_appears(df):
 
 
 def test_family_folds_single_factor_tables():
-    assert family("danger_faced_coach_zone@game3") == "danger_faced@game3"
-    assert family("danger_hit_shot_coarse") == "danger_hit"
+    assert family("danger_faced_coach_zone@game3") == "danger_faced_single@game3"
+    assert family("danger_hit_shot_coarse") == "danger_hit_single"
     assert family("danger_hit") == "danger_hit"
     assert family("last2") == "last2"
 

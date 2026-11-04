@@ -270,12 +270,18 @@ INSIGHT_COLUMNS = [
 
 
 def family(analysis: str) -> str:
-    """'danger_faced_coach_zone@game3' -> 'danger_faced@game3'. Single-factor tables belong to the
-    family of their parent so the top-5 cap counts them together."""
+    """'danger_faced_coach_zone@game3' -> 'danger_faced_single@game3'.
+
+    Shot-and-zone tables keep their own family; the two single-factor tables (shot alone, zone
+    alone) share one, so the top-5 cap can allow fewer of the coarse rows, which otherwise win
+    every ranking because their n is largest."""
     base, _, split = analysis.partition("@")
     for fam in ACTIONABLE_FAMILIES:
+        if base == fam:
+            break
         if base.startswith(fam):
-            base = fam
+            base = fam + "_single"
+            break
     return base + ("@" + split if split else "")
 
 
