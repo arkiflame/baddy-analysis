@@ -5,7 +5,9 @@ import pytest
 from tactics.config import DATA_ROOT
 from tactics.loader import load_matches, strokes_frame
 
-pytestmark = pytest.mark.skipif(not (DATA_ROOT / "ShuttleSet").exists(), reason="dataset not downloaded")
+pytestmark = pytest.mark.skipif(
+    not (DATA_ROOT / "ShuttleSet").exists(), reason="dataset not downloaded"
+)
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +41,11 @@ def test_hitter_half_known_for_almost_all_strokes(df):
 
 
 def test_players_never_change_half_within_a_rally(df):
-    n_halves = df.dropna(subset=["hitter_half"]).groupby(["rally_id", "hitter"], observed=True).hitter_half.nunique()
+    n_halves = (
+        df.dropna(subset=["hitter_half"])
+        .groupby(["rally_id", "hitter"], observed=True)
+        .hitter_half.nunique()
+    )
     assert (n_halves == 1).all()
 
 

@@ -107,7 +107,10 @@ def game_from_frame(df: pd.DataFrame, number: int, match: Match) -> Game:
                 score_before=before,
                 score_after=after,
                 # placeholder rows: every stroke unknown and no annotated outcome
-                annotated=not (all(t == shots.UNKNOWN for t in types) and not isinstance(last.getpoint_player, str)),
+                annotated=not (
+                    all(t == shots.UNKNOWN for t in types)
+                    and not isinstance(last.getpoint_player, str)
+                ),
                 has_unknown=shots.UNKNOWN in types,
                 flawed=any(s.flaw for s in strokes),
                 score_gap=before != prev_after,
@@ -123,7 +126,9 @@ def _side_period(rally: Rally, game_number: int) -> int:
     return 1 if game_number == 3 and max(rally.score_before) >= 11 else 0
 
 
-def _fill_half_from_neighbours(rallies: list[Rally], game_number: int, names: dict[str, str]) -> None:
+def _fill_half_from_neighbours(
+    rallies: list[Rally], game_number: int, names: dict[str, str]
+) -> None:
     """Rallies with no position data at all borrow the half from the nearest decided rally in
     the same game and the same side period (so the 11-point change of ends is respected)."""
     decided: dict[int, dict[str, str]] = {}
@@ -160,8 +165,13 @@ def infer_hitter_half(df: pd.DataFrame, hitter_y: np.ndarray, recv_y: np.ndarray
     # vote > 0 means "near" (y beyond the net), < 0 means "far"
     own_vote = np.where(np.isnan(hitter_y), 0.0, np.sign(hitter_y - court.NET_Y_M))
     opp_vote = np.where(np.isnan(recv_y), 0.0, -np.sign(recv_y - court.NET_Y_M))
-    votes = pd.DataFrame({"rally": df["rally"].to_numpy(), "player": df["player"].to_numpy(),
-                          "v": own_vote + opp_vote})
+    votes = pd.DataFrame(
+        {
+            "rally": df["rally"].to_numpy(),
+            "player": df["player"].to_numpy(),
+            "v": own_vote + opp_vote,
+        }
+    )
     per_player = votes.groupby(["rally", "player"])["v"].sum()
     # net vote for "player A is near": A's votes minus B's votes within the rally
     signed = per_player.reset_index()
@@ -169,8 +179,12 @@ def infer_hitter_half(df: pd.DataFrame, hitter_y: np.ndarray, recv_y: np.ndarray
     a_near = signed.groupby("rally")["v"].sum()
     half_a = a_near.map(lambda v: "near" if v > 0 else "far" if v < 0 else None)
     half = pd.Series(
-        [half_a.get(r) if p == "A" else _flip(half_a.get(r)) for r, p in zip(df["rally"], df["player"], strict=True)],
-        index=df.index, dtype=object,
+        [
+            half_a.get(r) if p == "A" else _flip(half_a.get(r))
+            for r, p in zip(df["rally"], df["player"], strict=True)
+        ],
+        index=df.index,
+        dtype=object,
     )
     return half
 
@@ -206,6 +220,7 @@ def _stroke(row: pd.Series, metres: dict[str, np.ndarray], i: int, names: dict[s
 # Flat table
 # ---------------------------------------------------------------------------------------
 
+
 def strokes_frame(matches: list[Match], players: PlayerConfig | None = None) -> pd.DataFrame:
     """One row per stroke with match/game/rally context attached. The analyses work on this."""
     players = players or load_player_config()
@@ -217,33 +232,53 @@ def strokes_frame(matches: list[Match], players: PlayerConfig | None = None) -> 
                 for s in r.strokes:
                     a_is_hitter = s.hitter == m.player_a
                     sb_h, sb_r = r.score_before if a_is_hitter else r.score_before[::-1]
-                    rows.append({
-                        "dataset": m.dataset, "match_id": m.id, "video": m.video,
-                        "tournament": m.tournament, "date": m.date,
-                        "game": g.number, "rally_no": r.number,
-                        "rally_id": f"{m.id}/g{g.number}/r{r.number}",
-                        "stroke_no": s.number, "n_strokes": n, "strokes_to_end": n - s.number,
-                        "is_serve": s.number == 1, "is_last": s.number == n,
-                        "hitter": s.hitter, "receiver": s.receiver,
-                        "hitter_handed": players.handed(s.hitter),
-                        "receiver_handed": players.handed(s.receiver),
-                        "shot": s.shot, "shot_coarse": shots.COARSE[s.shot],
-                        "backhand": s.backhand, "aroundhead": s.aroundhead,
-                        "hit_height": s.hit_height, "landing_height": s.landing_height,
-                        "hit_x": _x(s.hit), "hit_y": _y(s.hit),
-                        "land_x": _x(s.landing), "land_y": _y(s.landing),
-                        "hitter_x": _x(s.hitter_pos), "hitter_y": _y(s.hitter_pos),
-                        "recv_x": _x(s.receiver_pos), "recv_y": _y(s.receiver_pos),
-                        "hitter_half": s.hitter_half,
-                        "rally_winner": r.winner,
-                        "hitter_won": (r.winner == s.hitter) if r.winner else None,
-                        "lose_reason": r.lose_reason,
-                        "score_before_hitter": sb_h, "score_before_receiver": sb_r,
-                        "server": r.server,
-                        "annotated": r.annotated, "rally_has_unknown": r.has_unknown,
-                        "rally_flawed": r.flawed, "score_gap": r.score_gap,
-                        "time_s": s.time_s,
-                    })
+                    rows.append(
+                        {
+                            "dataset": m.dataset,
+                            "match_id": m.id,
+                            "video": m.video,
+                            "tournament": m.tournament,
+                            "date": m.date,
+                            "game": g.number,
+                            "rally_no": r.number,
+                            "rally_id": f"{m.id}/g{g.number}/r{r.number}",
+                            "stroke_no": s.number,
+                            "n_strokes": n,
+                            "strokes_to_end": n - s.number,
+                            "is_serve": s.number == 1,
+                            "is_last": s.number == n,
+                            "hitter": s.hitter,
+                            "receiver": s.receiver,
+                            "hitter_handed": players.handed(s.hitter),
+                            "receiver_handed": players.handed(s.receiver),
+                            "shot": s.shot,
+                            "shot_coarse": shots.COARSE[s.shot],
+                            "backhand": s.backhand,
+                            "aroundhead": s.aroundhead,
+                            "hit_height": s.hit_height,
+                            "landing_height": s.landing_height,
+                            "hit_x": _x(s.hit),
+                            "hit_y": _y(s.hit),
+                            "land_x": _x(s.landing),
+                            "land_y": _y(s.landing),
+                            "hitter_x": _x(s.hitter_pos),
+                            "hitter_y": _y(s.hitter_pos),
+                            "recv_x": _x(s.receiver_pos),
+                            "recv_y": _y(s.receiver_pos),
+                            "hitter_half": s.hitter_half,
+                            "rally_winner": r.winner,
+                            "hitter_won": (r.winner == s.hitter) if r.winner else None,
+                            "lose_reason": r.lose_reason,
+                            "score_before_hitter": sb_h,
+                            "score_before_receiver": sb_r,
+                            "server": r.server,
+                            "annotated": r.annotated,
+                            "rally_has_unknown": r.has_unknown,
+                            "rally_flawed": r.flawed,
+                            "score_gap": r.score_gap,
+                            "time_s": s.time_s,
+                        }
+                    )
     df = pd.DataFrame(rows)
     for c in ("shot", "shot_coarse", "hitter", "receiver", "lose_reason", "hitter_half", "dataset"):
         df[c] = df[c].astype("category")
@@ -257,6 +292,7 @@ def load_strokes(root: Path = DATA_ROOT, **kw) -> pd.DataFrame:
 # ---------------------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------------------
+
 
 def _fill_majority(s: pd.Series) -> pd.Series:
     vals = s.dropna()

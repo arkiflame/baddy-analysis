@@ -21,7 +21,7 @@ def test_wilson_handles_zero_n():
 
 
 def test_shrinkage_pulls_small_samples_harder():
-    small = stats.shrink(5, 6, baseline=0.5, prior_strength=20)   # raw 83%
+    small = stats.shrink(5, 6, baseline=0.5, prior_strength=20)  # raw 83%
     large = stats.shrink(50, 60, baseline=0.5, prior_strength=20)  # raw 83%
     assert small == pytest.approx(15 / 26)
     assert large == pytest.approx(60 / 80)
@@ -29,10 +29,12 @@ def test_shrinkage_pulls_small_samples_harder():
 
 
 def test_rate_table_flags_rare_and_significant_groups():
-    df = pd.DataFrame({
-        "zone": ["a"] * 100 + ["b"] * 5,
-        "won": [1] * 70 + [0] * 30 + [1] * 5,
-    })
+    df = pd.DataFrame(
+        {
+            "zone": ["a"] * 100 + ["b"] * 5,
+            "won": [1] * 70 + [0] * 30 + [1] * 5,
+        }
+    )
     t = stats.rate_table(df, "zone", "won", baseline=0.5, settings=stats.RateSettings(min_n=30))
     a = t.set_index("zone").loc["a"]
     b = t.set_index("zone").loc["b"]

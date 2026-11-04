@@ -16,9 +16,9 @@ def test_nan_passes_through():
 
 
 def test_depth_is_measured_into_each_half():
-    assert court.depth_from_net(5.7, "far") == 1.0     # 1 m beyond the net on the far side
+    assert court.depth_from_net(5.7, "far") == 1.0  # 1 m beyond the net on the far side
     assert court.depth_from_net(7.7, "near") == 1.0
-    assert court.depth_from_net(7.7, "far") == -1.0    # still on the other side
+    assert court.depth_from_net(7.7, "far") == -1.0  # still on the other side
 
 
 def test_right_hand_depends_on_which_way_the_player_faces():

@@ -42,3 +42,42 @@ changes half within a rally, so the rally-level fallbacks are exact when availab
 The CSV stores the score after the point is awarded (first rally of every game reads 1-0 or
 0-1). Subtracting the winner's point is exact whenever the winner is known; the
 `score_gap` flag records the rare rows where this disagrees with the previous rally's score.
+
+### D8. Zone thresholds kept at the brief's values; evidence recorded
+`uv run python scripts/zone_diagnostics.py` (outputs/diagnostics/). Landing depth of in-play
+strokes is tri-modal: net play peaks at 0.8-1.5 m, smashes at 3.5-4.2 m, clears/lobs at
+5.5-6.2 m. The valley between mid and rear is 4.5-5.0 m, so the **5.0 m split is defensible**;
+90.1% of clears/lobs land beyond it and the 10% that land short are genuinely short lifts a
+coach wants to see as "mid". The front/mid valley is at ~2.9 m rather than 1.98 m: 1.98 m is a
+real line (short service line) and is kept, but a 2.5-3.0 m front boundary would separate net
+play from mid-court play more cleanly. **Suggested alternative: front 0-2.5 m.**
+Body radius: at 0.5 m, 712 in-play strokes (1.1%) are body shots, 4.5% of smashes and 5.0% of
+drives, which is the expected signature. Position noise: the hitter's recorded feet are a median
+0.80 m (p75 1.12 m) from the contact point, so 0.5 m is below normal reach and captures only
+genuinely jammed shots. **Suggested alternative: 0.75 m (1,626 strokes, 2.5%)** if sample size
+matters more than purity. Defaults unchanged.
+
+### D9. "Last 2-3 shots before the point ended" = the strokes before the final stroke
+Conditioning on the final stroke is circular (an error loses, a winner wins). The sequence is
+therefore the k strokes before the final one; the final stroke is reported separately as counts
+("How points end": own winner / opponent error / own error / opponent winner).
+
+### D10. Danger conditions exclude the `out` and `net_error` zones
+Those are outcomes of the stroke, not targets. Including them only rediscovers that errors lose
+points (the first run of the report had "shots to out" as insight 1).
+
+### D11. "Score pressure" = either player at 18 or more when the rally starts
+Simple, matches the brief's "18+ points", and avoids a second parameter. Configurable with
+`--pressure`.
+
+### D12. Shrinkage prior strength = 20 rallies
+Beta-binomial toward the player's own baseline. 20 pseudo-rallies means a 5/6 pattern reports
+~58% against a 50% baseline while 50/60 keeps ~69%. Ranking uses the shrunk value.
+
+### D13. Top-5 selection rule
+Candidates must have n >= 30 and a 95% Wilson interval that excludes the baseline; ranked by
+|lift| x sqrt(n); at most two per analysis family so one table cannot fill the list.
+
+### D14. Holdout = ShuttleSet22's published validation + test match ids
+14 matches (ids 38-40, 46-50, 52-57 of ShuttleSet22). Chosen by the dataset authors before we
+ran anything. Axelsen has 2 matches in it (`tactics players` prints the count per player).

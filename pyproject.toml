@@ -20,6 +20,28 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
 ]
+# Milestone 3 (rally outcome models). CUDA wheels come from PyTorch's own index, see below.
+m3 = [
+    "torch>=2.5",
+    "scikit-learn>=1.5",
+]
+# Milestone 2 tooling (labelling tool, court calibration, TrackNetV3 wrapper).
+video = [
+    "opencv-python>=4.10",
+    "torch>=2.5",
+    "torchvision>=0.20",
+]
+
+# PyPI only ships CPU-only torch wheels for Windows. cu128 wheels run on any driver >= CUDA 12.8
+# (this machine reports 13.3) and fall back to CPU automatically where there is no GPU.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [project.scripts]
 tactics = "tactics.cli:main"
@@ -34,6 +56,10 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+# Format at 100 columns; flag only lines that are still over 120 (long report strings).
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

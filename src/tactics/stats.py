@@ -55,13 +55,14 @@ def rate_table(
     by: list[str] | str,
     outcome: str,
     baseline: float,
-    settings: RateSettings = RateSettings(),
+    settings: RateSettings | None = None,
 ) -> pd.DataFrame:
     """Win-rate table for each group in `by`, relative to `baseline`.
 
     Columns: n, wins, rate, ci_lo, ci_hi, shrunk, lift (shrunk - baseline), reliable,
     ci_excludes_baseline. Sorted by |lift| among reliable rows first.
     """
+    settings = settings or RateSettings()
     by = [by] if isinstance(by, str) else list(by)
     g = df.groupby(by, observed=True, dropna=True)[outcome]
     out = g.agg(n="size", wins="sum").reset_index()
@@ -73,8 +74,11 @@ def rate_table(
     out["reliable"] = out["n"] >= settings.min_n
     out["ci_excludes_baseline"] = (out["ci_lo"] > baseline) | (out["ci_hi"] < baseline)
     out["baseline"] = baseline
-    return out.sort_values(["reliable", "lift"], key=lambda s: s.abs() if s.name == "lift" else s,
-                           ascending=[False, False]).reset_index(drop=True)
+    return out.sort_values(
+        ["reliable", "lift"],
+        key=lambda s: s.abs() if s.name == "lift" else s,
+        ascending=[False, False],
+    ).reset_index(drop=True)
 
 
 def two_proportion_z(k1, n1, k2, n2) -> float:

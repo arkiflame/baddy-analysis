@@ -86,7 +86,11 @@ class PlayerConfig:
 def load_player_config(path: Path = CONFIG_DIR / "players.toml") -> PlayerConfig:
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     players = raw.get("players", {})
-    unverified = {n for n, p in players.items() if "assum" in p.get("source", "") or "verify" in p.get("source", "")}
+    unverified = {
+        n
+        for n, p in players.items()
+        if "assum" in p.get("source", "") or "verify" in p.get("source", "")
+    }
     return PlayerConfig(
         handedness={name: p["handedness"] for name, p in players.items()},
         default_handedness=raw.get("default", {}).get("handedness", "right"),

@@ -40,18 +40,34 @@ def main() -> int:
         print("Cloning metadata only (blobs are fetched lazily by git archive)...")
         # --no-checkout: never touch the working tree (that is what fails on Windows).
         # --filter=blob:none: fetch file contents lazily, only for the sub-trees we archive.
-        run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--no-checkout", REPO, str(clone)])
+        run(
+            [
+                "git",
+                "clone",
+                "--quiet",
+                "--depth",
+                "1",
+                "--filter=blob:none",
+                "--no-checkout",
+                REPO,
+                str(clone),
+            ]
+        )
 
         for name, subtree in SUBTREES.items():
             out = DEST / name
             out.mkdir()
             print(f"Extracting {subtree} -> {out}")
-            archive = run(["git", "-C", str(clone), "archive", "--format=tar", f"HEAD:{subtree}"],
-                          capture_output=True)
+            archive = run(
+                ["git", "-C", str(clone), "archive", "--format=tar", f"HEAD:{subtree}"],
+                capture_output=True,
+            )
             run(["tar", "-x", "-C", str(out)], input=archive.stdout)
 
         for f in ROOT_FILES:
-            content = run(["git", "-C", str(clone), "show", f"HEAD:{f}"], capture_output=True).stdout
+            content = run(
+                ["git", "-C", str(clone), "show", f"HEAD:{f}"], capture_output=True
+            ).stdout
             (DEST / f).write_bytes(content)
 
     n_ss = len([p for p in (DEST / "ShuttleSet" / "set").iterdir() if p.is_dir()])

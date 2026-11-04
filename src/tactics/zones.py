@@ -16,7 +16,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from tactics import court
 from tactics.config import ZoneConfig, load_zone_config
 
 ENDER_ZONES = {"out": "out", "net": "net_error", "not_over_net": "net_error"}
@@ -27,7 +26,9 @@ def annotate(df: pd.DataFrame, cfg: ZoneConfig | None = None) -> pd.DataFrame:
     cfg = cfg or load_zone_config()
     out = df.copy()
 
-    recv_half = np.where(out["hitter_half"] == "far", "near", np.where(out["hitter_half"] == "near", "far", None))
+    recv_half = np.where(
+        out["hitter_half"] == "far", "near", np.where(out["hitter_half"] == "near", "far", None)
+    )
     is_far = recv_half == "far"
     is_near = recv_half == "near"
     known = is_far | is_near
@@ -51,7 +52,9 @@ def annotate(df: pd.DataFrame, cfg: ZoneConfig | None = None) -> pd.DataFrame:
 
     # --- out of bounds (geometry) and rally-ender ground truth ----------------------------
     half_w = cfg.singles_half_width_m + cfg.out_tolerance_m
-    out["out_geom"] = (np.abs(out["lat_fh"]) > half_w) | (out["depth"] > cfg.net_y + cfg.out_tolerance_m)
+    out["out_geom"] = (np.abs(out["lat_fh"]) > half_w) | (
+        out["depth"] > cfg.net_y + cfg.out_tolerance_m
+    )
     out["short_of_net"] = out["depth"] < 0
 
     # --- body shot --------------------------------------------------------------------------
@@ -63,12 +66,18 @@ def annotate(df: pd.DataFrame, cfg: ZoneConfig | None = None) -> pd.DataFrame:
     # --- (a) coach zone ---------------------------------------------------------------------
     band = _band_name(out["depth"].to_numpy(), cfg.coach_bands)
     side = np.where(out["lat_fh"] >= 0, "fh", "bh")
-    zone = np.where(pd.isna(band), None, np.char.add(np.char.add(band.astype(str), "_"), side.astype(str)))
+    zone = np.where(
+        pd.isna(band), None, np.char.add(np.char.add(band.astype(str), "_"), side.astype(str))
+    )
     zone = np.where(out["body"], "body", zone)
     zone = np.where(out["out_geom"], "out", zone)
     zone = np.where(out["short_of_net"], "net_error", zone)
     # rally enders: trust the annotated reason over geometry
-    ender = out["lose_reason"].map(ENDER_ZONES) if "lose_reason" in out else pd.Series(None, index=out.index)
+    ender = (
+        out["lose_reason"].map(ENDER_ZONES)
+        if "lose_reason" in out
+        else pd.Series(None, index=out.index)
+    )
     ender = ender.where(out["is_last"])
     zone = np.where(ender.notna(), ender, zone)
     zone = np.where(known, zone, None)
@@ -80,7 +89,9 @@ def annotate(df: pd.DataFrame, cfg: ZoneConfig | None = None) -> pd.DataFrame:
 
     # --- (c) receiver-relative movement, cross/straight -------------------------------------
     move_dist = np.hypot(d_lat, d_depth)
-    direction = np.where(np.abs(d_depth) >= np.abs(d_lat), np.where(d_depth < 0, "forward", "back"), "lateral")
+    direction = np.where(
+        np.abs(d_depth) >= np.abs(d_lat), np.where(d_depth < 0, "forward", "back"), "lateral"
+    )
     direction = np.where(move_dist < cfg.move_min_m, "in_place", direction)
     out["move_dir"] = np.where(np.isnan(move_dist), None, direction)
     out["move_side"] = np.where(np.isnan(move_dist), None, np.where(d_lat >= 0, "fh", "bh"))
@@ -89,19 +100,27 @@ def annotate(df: pd.DataFrame, cfg: ZoneConfig | None = None) -> pd.DataFrame:
     contact_x = out["hit_x"].fillna(out["hitter_x"]).to_numpy(float)
     oh, ol = contact_x - cfg.centre_x, land_x - cfg.centre_x
     cross = np.where(np.sign(oh) != np.sign(ol), "cross", "straight")
-    cross = np.where((np.abs(oh) < cfg.centre_band_m) | (np.abs(ol) < cfg.centre_band_m), "centre", cross)
+    cross = np.where(
+        (np.abs(oh) < cfg.centre_band_m) | (np.abs(ol) < cfg.centre_band_m), "centre", cross
+    )
     out["cross"] = np.where(np.isnan(oh) | np.isnan(ol), None, cross)
     return out
 
 
 def coach_zone_order(cfg: ZoneConfig) -> list[str]:
-    return [f"{b.name}_{s}" for b in cfg.coach_bands for s in ("fh", "bh")] + ["body", "out", "net_error"]
+    return [f"{b.name}_{s}" for b in cfg.coach_bands for s in ("fh", "bh")] + [
+        "body",
+        "out",
+        "net_error",
+    ]
 
 
 def _band_name(v: np.ndarray, bands) -> np.ndarray:
+    """Lower edge inclusive, upper exclusive, except the last band which includes the baseline."""
     names = np.full(v.shape, None, dtype=object)
-    for b in bands:
-        names[(v >= b.lo) & (v < b.hi)] = b.name
+    for i, b in enumerate(bands):
+        upper = (v <= b.hi) if i == len(bands) - 1 else (v < b.hi)
+        names[(v >= b.lo) & upper] = b.name
     return names
 
 
