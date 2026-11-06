@@ -14,9 +14,11 @@ export function RallyViewer({ strokes, me, title }: { strokes: RallyStroke[]; me
   const last = strokes.length ? strokes[strokes.length - 1].no : 0;
   const first = strokes.length ? strokes[0].no : 1;
   const focus = strokes.find((s) => s.highlight)?.no ?? last;
-  const [end, setEnd] = useState(focus);
+  // the key shot and the three before it; plus the shot after it when that one ended the rally
+  const initialEnd = focus + 1 === last ? last : focus;
+  const [end, setEnd] = useState(initialEnd);
   const [whole, setWhole] = useState(false);
-  const start = Math.max(first, end - (WINDOW - 1));
+  const start = Math.max(first, Math.min(end, focus) - (WINDOW - 1));
   const range: [number, number] | undefined = whole ? undefined : [start, end];
   const showing = whole ? `All ${strokes.length} shots.` : `Shots ${start} to ${end} of ${last}.`;
   return (
@@ -40,7 +42,7 @@ export function RallyViewer({ strokes, me, title }: { strokes: RallyStroke[]; me
           aria-pressed={whole}
           onClick={() => {
             setWhole((w) => !w);
-            setEnd(focus);
+            setEnd(initialEnd);
           }}
         >
           {whole ? `Show the last ${WINDOW} shots` : "Show whole rally"}

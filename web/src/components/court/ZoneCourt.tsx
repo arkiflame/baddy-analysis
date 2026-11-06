@@ -6,17 +6,19 @@ import { areaShort, freqPair } from "@/lib/format";
 import {
   type Band,
   type Half,
+  Board,
   CourtLines,
-  NET,
+  HalfLabels,
+  Pill,
   S,
-  SideLabels,
+  VIEW_H,
+  VIEW_W,
+  fromHalf,
   px,
   py,
-  sideLabelsFor,
-  toFull,
-  viewBox,
   zoneRects,
 } from "./Geometry";
+import { BOARD, SIZES } from "./theme";
 
 export interface ZoneCourtFrame {
   coach_bands: Band[];
@@ -31,14 +33,14 @@ function statusOf(r: RateRow | undefined, minN: number): Status {
   return r.delta < 0 ? "strong" : "weak";
 }
 
-function fillFor(st: Status): string {
-  return st === "strong" ? "var(--zone-strong)" : st === "weak" ? "var(--zone-weak)" : "none";
+function tint(st: Status): string | undefined {
+  return st === "strong" ? BOARD.tealTint : st === "weak" ? BOARD.goldTint : undefined;
 }
 
 function line2(st: Status, me: string, short = false): string {
   if (st === "strong") return short ? "wins more" : `${me} wins more here`;
   if (st === "weak") return short ? "loses more" : `${me} loses more here`;
-  if (st === "none") return short ? "no clear diff." : "no clear difference";
+  if (st === "none") return short ? "about the same" : "about the same";
   return short ? "too few" : "too few shots";
 }
 
@@ -60,11 +62,13 @@ interface Tip {
   lines: string[];
 }
 
+const shortArea = (zone: string) => areaShort(zone).replace(", forehand side", " forehand").replace(", backhand side", " backhand");
+
 /**
- * One half of the court with the six coach zones and the body circle, each filled by what the
- * numbers say: blue "wins more here", red "loses more here", plain green otherwise. role
- * "faced" draws the player's own half (shots the player receives); "hit" draws the opponent's
- * half (where the player's own shots land).
+ * The win / loss map: the six coach zones and the body circle of one half as tinted tiles
+ * inside the court lines. Teal tint: the player wins more here than most pros; gold tint: loses
+ * more; no tint: about the same or too few shots. role "faced" tints the player's half (shots the
+ * player receives); "hit" tints the opponent's half (where the player's own shots land).
  */
 export function ZoneCourt({
   frame,
@@ -90,30 +94,27 @@ export function ZoneCourt({
   const uid = useId();
   const [tip, setTip] = useState<Tip | null>(null);
   const half: Half = role === "faced" ? "player" : "opponent";
-  const v = viewBox(half);
   const byZone = useMemo(() => new Map(rows.filter((r) => r.zone).map((r) => [r.zone as string, r])), [rows]);
   const zones = zoneRects(frame.coach_bands, half, fhOnRight);
-  const labels = sideLabelsFor(half, me, fhOnRight);
-  const body = toFull(bodyAt.x, bodyAt.y, half);
+  const body = fromHalf(bodyAt.x, bodyAt.y, half);
   const rr = frame.body_radius_m * S;
-
-  const pct = (X: number, Y: number) => ({ x: ((px(X) - v.x0) / v.w) * 100, y: ((py(Y) - v.y0) / v.h) * 100 });
+  const pct = (X: number, Y: number) => ({ x: (px(X) / VIEW_W) * 100, y: (py(Y) / VIEW_H) * 100 });
+  const legend = `Teal tint: ${me} wins more here · gold tint: ${me} loses more here · no tint: about the same or too few shots`;
 
   return (
-    <div className="court-wrap relative mx-auto w-full max-w-[560px]">
-      <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none" onMouseLeave={() => setTip(null)}>
-        <title id={`${uid}-t`}>{title}</title>
-        <CourtLines view={half} />
+    <div className="relative">
+      <Board uid={uid} title={title} legend={legend} onMouseLeave={() => setTip(null)}>
+        <CourtLines />
+        <HalfLabels me={me} />
         {zones.map((z) => {
           const r = byZone.get(z.zone);
           const st = statusOf(r, minN);
           const lines = describe(r, st, me, minN);
           const cx = z.x + z.w / 2;
-          // keep text clear of the doubles long service line in the rear band
-          const nearBase = half === "player" ? z.y + z.h > 13 : z.y < 0.4;
-          const cy = nearBase ? (half === "player" ? z.y + z.h / 2 - 0.3 : z.y + z.h / 2 + 0.3) : z.y + z.h / 2;
+          const cy = z.y + z.h / 2;
           const t = pct(cx, cy);
           const tipObj = { ...t, title: areaShort(z.zone), lines };
+          const fill = tint(st);
           return (
             <g
               key={z.zone}
@@ -124,19 +125,9 @@ export function ZoneCourt({
               onFocus={() => setTip(tipObj)}
               onBlur={() => setTip(null)}
             >
-              <rect x={px(z.x) + 4} y={py(z.y) + 4} width={z.w * S - 8} height={z.h * S - 8} rx={6} fill={fillFor(st)} fillOpacity={st === "strong" || st === "weak" ? 0.92 : 0} />
-              <text className="court-long" x={px(cx)} y={py(cy) - 6} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 19px)" }} fontWeight="600" fill="var(--zone-ink)">
-                {areaShort(z.zone)}
-              </text>
-              <text className="court-short" x={px(cx)} y={py(cy) - 6} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 17px)" }} fontWeight="600" fill="var(--zone-ink)">
-                {areaShort(z.zone).replace(", forehand side", " forehand").replace(", backhand side", " backhand")}
-              </text>
-              <text className="court-long" x={px(cx)} y={py(cy) + 18} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }} fill="var(--zone-ink)">
-                {line2(st, me)}
-              </text>
-              <text className="court-short" x={px(cx)} y={py(cy) + 18} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--zone-ink)">
-                {line2(st, me, true)}
-              </text>
+              <rect x={px(z.x) + 3} y={py(z.y) + 3} width={z.w * S - 6} height={z.h * S - 6} rx={4} fill={fill ?? "transparent"} />
+              <Pill x={px(cx)} y={py(cy) - SIZES.fontSmall * 0.85} text={shortArea(z.zone)} />
+              <Pill x={px(cx)} y={py(cy) + SIZES.fontSmall * 0.85} text={line2(st, me, true)} gold={st === "weak"} />
             </g>
           );
         })}
@@ -146,6 +137,7 @@ export function ZoneCourt({
           const lines = describe(r, st, me, minN);
           const t = pct(body.X, body.Y);
           const tipObj = { ...t, title: "straight at the body", lines };
+          const fill = tint(st);
           return (
             <g
               tabIndex={0}
@@ -155,21 +147,12 @@ export function ZoneCourt({
               onFocus={() => setTip(tipObj)}
               onBlur={() => setTip(null)}
             >
-              <circle cx={px(body.X)} cy={py(body.Y)} r={rr} fill={st === "strong" || st === "weak" ? fillFor(st) : "var(--court-green)"} stroke="var(--court-white)" strokeWidth="3" />
-              <text x={px(body.X)} y={py(body.Y) - 4} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fontWeight="600" fill="var(--zone-ink)">
-                body
-              </text>
-              <text x={px(body.X)} y={py(body.Y) + 14} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--zone-ink)">
-                {line2(st, me, true)}
-              </text>
+              <circle cx={px(body.X)} cy={py(body.Y)} r={rr} fill={fill ?? BOARD.bg} fillOpacity={fill ? 1 : 0.6} stroke={BOARD.line} strokeWidth={SIZES.lineW} />
+              <Pill x={px(body.X)} y={py(body.Y)} text={`body · ${line2(st, me, true)}`} gold={st === "weak"} />
             </g>
           );
         })()}
-        <SideLabels half={half} left={labels.left} right={labels.right} />
-        <text className="court-long" x={px(0)} y={half === "player" ? py(NET) - 28 : py(NET) + 40} style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)">
-          {half === "player" ? `${me}'s half: shots ${me} receives` : `opponent's half: where ${me}'s shots land`}
-        </text>
-      </svg>
+      </Board>
       {tip && (
         <div
           role="tooltip"
@@ -189,22 +172,8 @@ export function ZoneCourt({
   );
 }
 
-/** Three swatches with words; the words carry the meaning. */
-export function ZoneLegend({ me }: { me: string }) {
-  const sw = (bg: string, border: string) => (
-    <span className="inline-block h-3.5 w-6 rounded-sm border" style={{ background: bg, borderColor: border }} />
-  );
-  return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-2">
-      <li className="inline-flex items-center gap-1.5">
-        {sw("var(--zone-strong)", "var(--zone-strong)")} {me} wins more here
-      </li>
-      <li className="inline-flex items-center gap-1.5">
-        {sw("var(--zone-weak)", "var(--zone-weak)")} {me} loses more here
-      </li>
-      <li className="inline-flex items-center gap-1.5">
-        {sw("var(--court-green)", "var(--court-green)")} no clear difference or too few shots
-      </li>
-    </ul>
-  );
+/** The legend now lives inside the board; kept as a no-op export for callers. */
+export function ZoneLegend(_props: { me: string }) {
+  void _props;
+  return null;
 }

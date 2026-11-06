@@ -2,7 +2,8 @@
 
 import { useId, useMemo, useState } from "react";
 import type { Grid } from "@/lib/types";
-import { type Band, CourtLines, NET, S, SideLabels, px, py, sideLabelsFor, toFull, viewBox } from "./Geometry";
+import { type Band, Board, CourtLines, HalfLabels, S, VIEW_H, VIEW_W, fromHalf, px, py } from "./Geometry";
+import { BOARD, SIZES } from "./theme";
 
 export interface HeatBase {
   x: number; // half-court frame: toward the player's right
@@ -13,7 +14,8 @@ export interface HeatBase {
   yq3: number;
 }
 
-/** Where the player stands at the moment of a hit: darker cells hold more strokes. */
+/** Where the player stands at the moment of a hit: a single-hue teal ramp on the dark surface,
+ *  the usual spot as a gold crosshair, the middle half of positions as a dashed box. */
 export function HeatCourt({
   grid,
   base,
@@ -31,28 +33,30 @@ export function HeatCourt({
 }) {
   const uid = useId();
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
-  const v = viewBox("player");
-  const labels = sideLabelsFor("player", me, fhOnRight);
   const max = useMemo(() => {
     let m = 1;
     for (const col of grid.counts) for (const c of col) if (c > m) m = c;
     return m;
   }, [grid]);
   void frame;
+  void fhOnRight;
+  const legend = `Teal: where ${me} stands when the opponent hits, darker = more often · gold cross: usual spot · dashed box: half of the time`;
 
   return (
-    <div className="court-wrap relative mx-auto w-full max-w-[560px]">
-      <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none" onMouseLeave={() => setTip(null)}>
-        <title id={`${uid}-t`}>{title}</title>
-        <CourtLines view="player" />
+    <div className="relative">
+      <Board uid={uid} title={title} legend={legend} onMouseLeave={() => setTip(null)}>
+        <CourtLines />
+        <HalfLabels me={me} />
         {grid.counts.map((col, ix) =>
           col.map((c, iy) => {
             if (!c) return null;
+            // the cell's corner nearest the net and the player's left, in the half-court frame
             const x = grid.x0 + ix * grid.bin;
             const y = grid.y0 + iy * grid.bin;
-            const p = toFull(x, y, "player");
-            const X = px(p.X);
-            const Y = py(p.Y);
+            const a = fromHalf(x, y, "player");
+            const b = fromHalf(x + grid.bin, y + grid.bin, "player");
+            const X = px(Math.min(a.X, b.X));
+            const Y = py(Math.min(a.Y, b.Y));
             const text = `${c} ${c === 1 ? "shot" : "shots"} here`;
             return (
               <rect
@@ -61,11 +65,9 @@ export function HeatCourt({
                 y={Y}
                 width={grid.bin * S}
                 height={grid.bin * S}
-                fill="#0b0b0b"
-                fillOpacity={0.12 + 0.7 * (c / max)}
-                onMouseEnter={() =>
-                  setTip({ x: ((X + (grid.bin * S) / 2 - v.x0) / v.w) * 100, y: ((Y - v.y0) / v.h) * 100, text })
-                }
+                fill={BOARD.line}
+                fillOpacity={0.12 + 0.78 * (c / max)}
+                onMouseEnter={() => setTip({ x: ((X + (grid.bin * S) / 2) / VIEW_W) * 100, y: (Y / VIEW_H) * 100, text })}
               />
             );
           }),
@@ -73,8 +75,8 @@ export function HeatCourt({
         {base && (
           <g aria-label={`${me}'s usual waiting spot`} role="img">
             {(() => {
-              const a = toFull(base.xq1, base.yq1, "player");
-              const b = toFull(base.xq3, base.yq3, "player");
+              const a = fromHalf(base.xq1, base.yq1, "player");
+              const b = fromHalf(base.xq3, base.yq3, "player");
               return (
                 <rect
                   x={px(Math.min(a.X, b.X))}
@@ -82,28 +84,25 @@ export function HeatCourt({
                   width={Math.abs(b.X - a.X) * S}
                   height={Math.abs(b.Y - a.Y) * S}
                   fill="none"
-                  stroke="var(--court-white)"
-                  strokeWidth="3"
-                  strokeDasharray="10 8"
+                  stroke={BOARD.text}
+                  strokeWidth={SIZES.lineW + 1}
+                  strokeDasharray="12 9"
                 />
               );
             })()}
             {(() => {
-              const c = toFull(base.x, base.y, "player");
+              const c = fromHalf(base.x, base.y, "player");
+              const r = SIZES.dotR * 1.3;
               return (
-                <>
-                  <line x1={px(c.X) - 16} y1={py(c.Y)} x2={px(c.X) + 16} y2={py(c.Y)} stroke="var(--court-white)" strokeWidth="5" />
-                  <line x1={px(c.X)} y1={py(c.Y) - 16} x2={px(c.X)} y2={py(c.Y) + 16} stroke="var(--court-white)" strokeWidth="5" />
-                </>
+                <g stroke={BOARD.gold} strokeWidth={SIZES.shotW + 1} strokeLinecap="round">
+                  <line x1={px(c.X) - r} y1={py(c.Y)} x2={px(c.X) + r} y2={py(c.Y)} />
+                  <line x1={px(c.X)} y1={py(c.Y) - r} x2={px(c.X)} y2={py(c.Y) + r} />
+                </g>
               );
             })()}
           </g>
         )}
-        <SideLabels half="player" left={labels.left} right={labels.right} />
-        <text x={px(0)} y={py(NET) - 28} style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)" aria-hidden="true">
-          darker = {me} stands here more often
-        </text>
-      </svg>
+      </Board>
       {tip && (
         <div
           role="tooltip"
@@ -113,9 +112,6 @@ export function HeatCourt({
           {tip.text}
         </div>
       )}
-      <p className="mt-1 text-xs text-ink-2">
-        The cross is where {me} usually waits; the dashed box is where {me} waits half of the time.
-      </p>
     </div>
   );
 }

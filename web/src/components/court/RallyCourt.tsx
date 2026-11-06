@@ -1,14 +1,27 @@
 import { useId } from "react";
 import type { RallyStroke } from "@/lib/types";
-import { ArrowMarkers, CourtLines, HALF_W, L, px, py, viewBox } from "./Geometry";
+import { ArrowMarkers, Board, CourtLines, HalfLabels, SCALE_WITH_CONTAINER, fromFull, px, py } from "./Geometry";
+import { BOARD, FONT, SIZES } from "./theme";
+
+/** A gentle quadratic curve from a to b: the bow is proportional to the length and capped. */
+function curve(a: { X: number; Y: number }, b: { X: number; Y: number }): string {
+  const dx = b.X - a.X;
+  const dy = b.Y - a.Y;
+  const len = Math.hypot(dx, dy) || 1;
+  const bow = Math.min(0.16 * len, 1.0); // metres
+  const nx = -dy / len;
+  const ny = dx / len;
+  const cx = (a.X + b.X) / 2 + nx * bow;
+  const cy = (a.Y + b.Y) / 2 + ny * bow;
+  return `M ${px(a.X)} ${py(a.Y)} Q ${px(cx)} ${py(cy)} ${px(b.X)} ${py(b.Y)}`;
+}
 
 /**
- * One rally drawn on a full court, the player's half at the bottom: every stroke is an arrow
- * from where it was hit to where it landed, numbered in order. The stroke the insight is about
- * is drawn thicker with a halo. Strokes without a recorded endpoint are skipped.
- *
- * `range` limits the drawing to stroke numbers [from, to] (inclusive) and draws them larger,
- * for the step-through view; without it the whole rally is drawn.
+ * One rally on the board, the player on the left: each stroke is a curve from where it was hit
+ * to where it landed. The key shot (the one the card is about) is gold and thick; the player's
+ * other shots are solid light grey, the opponent's dashed slate. Numbered dots mark each hit
+ * point; a cross marks where the rally ended. `range` limits the drawing to stroke numbers
+ * [from, to] (inclusive); without it the whole rally is drawn.
  */
 export function RallyCourt({
   strokes,
@@ -22,60 +35,72 @@ export function RallyCourt({
   range?: [number, number];
 }) {
   const uid = useId();
-  const v = viewBox("full");
   const inRange = (s: RallyStroke) => !range || (s.no >= range[0] && s.no <= range[1]);
   const drawable = strokes.filter((s) => s.from && s.to);
   const drawn = drawable.filter(inRange);
-  const big = Boolean(range);
-  const r = big ? 24 : 16;
-  const font = big ? 24 : 17;
+  const last = drawable[drawable.length - 1];
+  const showEnd = last && drawn.includes(last);
+  const skipped = strokes.length - drawable.length;
   return (
-    <figure className="court-wrap mx-auto w-full max-w-[560px]">
-      <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none">
-        <title id={`${uid}-t`}>{title}</title>
-        <ArrowMarkers id={uid} />
-        <CourtLines view="full" />
-        <text x={px(HALF_W)} y={py(0) - 16} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)" aria-hidden="true">
-          opponent
-        </text>
-        <text x={px(HALF_W)} y={py(L) + 34} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)" aria-hidden="true">
-          {me}
-        </text>
-        {drawn.map((s) => {
-          const [x1, y1] = s.from as [number, number];
-          const [x2, y2] = s.to as [number, number];
-          const colour = s.by === "me" ? "var(--stroke-me)" : "var(--stroke-opp)";
-          const w = (s.highlight ? 10 : 5) + (big ? 3 : 0);
-          const label = `${s.no}. ${s.by === "me" ? me : "opponent"}: ${s.shot.replace(/_/g, " ")}${s.highlight ? " (this is the shot)" : ""}`;
+    <Board
+      uid={uid}
+      title={title}
+      legend={`Solid: ${me} · dashed: opponent · gold: the shot this tip is about · ✕: where the rally ended${
+        skipped ? ` · ${skipped} of ${strokes.length} shots had no recorded landing point` : ""
+      }`}
+    >
+      <ArrowMarkers id={uid} />
+      <CourtLines />
+      <HalfLabels me={me} />
+      {drawn.map((s) => {
+        const a = fromFull(...(s.from as [number, number]));
+        const b = fromFull(...(s.to as [number, number]));
+        const colour = s.highlight ? BOARD.gold : s.by === "me" ? BOARD.me : BOARD.opp;
+        const marker = s.highlight ? "gold" : s.by;
+        const label = `${s.no}. ${s.by === "me" ? me : "opponent"}: ${s.shot.replace(/_/g, " ")}${s.highlight ? " (this is the shot)" : ""}`;
+        return (
+          <g key={s.no} aria-label={label} role="img">
+            <path
+              d={curve(a, b)}
+              fill="none"
+              stroke={colour}
+              strokeWidth={s.highlight ? SIZES.keyW : SIZES.shotW}
+              strokeOpacity={s.highlight ? 1 : 0.88}
+              strokeLinecap="round"
+              strokeDasharray={s.by === "opp" && !s.highlight ? "14 10" : undefined}
+              markerEnd={`url(#${uid}-${marker})`}
+            />
+          </g>
+        );
+      })}
+      {drawn.map((s) => {
+        const a = fromFull(...(s.from as [number, number]));
+        return (
+          <g key={`dot-${s.no}`} aria-hidden="true" style={SCALE_WITH_CONTAINER}>
+            <circle cx={px(a.X)} cy={py(a.Y)} r={SIZES.dotR} fill={s.highlight ? BOARD.gold : BOARD.opp} />
+            <text
+              x={px(a.X)}
+              y={py(a.Y) + SIZES.fontSmall * 0.36}
+              textAnchor="middle"
+              fill={s.highlight ? BOARD.goldInk : BOARD.slateInk}
+              style={{ fontSize: `${SIZES.fontSmall}px`, fontFamily: FONT, fontWeight: 700 }}
+            >
+              {s.no}
+            </text>
+          </g>
+        );
+      })}
+      {showEnd &&
+        (() => {
+          const e = fromFull(...(last.to as [number, number]));
+          const r = SIZES.dotR * 0.8;
           return (
-            <g key={s.no} aria-label={label} role="img">
-              {s.highlight && (
-                <line x1={px(x1)} y1={py(y1)} x2={px(x2)} y2={py(y2)} stroke="#ffffff" strokeOpacity="0.45" strokeWidth={w + 14} strokeLinecap="round" />
-              )}
-              <line x1={px(x1)} y1={py(y1)} x2={px(x2)} y2={py(y2)} stroke="var(--stroke-outline)" strokeWidth={w + 3} strokeLinecap="round" />
-              <line
-                x1={px(x1)}
-                y1={py(y1)}
-                x2={px(x2)}
-                y2={py(y2)}
-                stroke={colour}
-                strokeWidth={w}
-                strokeLinecap="round"
-                markerEnd={`url(#${uid}-${s.by})`}
-              />
-              <circle cx={px(x1)} cy={py(y1)} style={{ r: `calc(var(--court-font-scale, 1) * ${r}px)` }} fill={colour} stroke="var(--stroke-outline)" strokeWidth="2" />
-              <text x={px(x1)} y={py(y1) + font * 0.36} textAnchor="middle" style={{ fontSize: `calc(var(--court-font-scale, 1) * ${font}px)` }} fontWeight="700" fill="#0b0b0b">
-                {s.no}
-              </text>
+            <g aria-label="where the rally ended" role="img" stroke={BOARD.net} strokeWidth={SIZES.shotW + 1} strokeLinecap="round" style={SCALE_WITH_CONTAINER}>
+              <line x1={px(e.X) - r} y1={py(e.Y) - r} x2={px(e.X) + r} y2={py(e.Y) + r} />
+              <line x1={px(e.X) - r} y1={py(e.Y) + r} x2={px(e.X) + r} y2={py(e.Y) - r} />
             </g>
           );
-        })}
-      </svg>
-      <figcaption className="mt-1 text-xs text-ink-2">
-        White arrows: {me}&apos;s shots. Yellow arrows: the opponent&apos;s. The thick arrow is the shot this
-        card is about. Numbers give the order.
-        {drawable.length < strokes.length ? ` ${strokes.length - drawable.length} of ${strokes.length} strokes had no recorded landing point and are not drawn.` : ""}
-      </figcaption>
-    </figure>
+        })()}
+    </Board>
   );
 }

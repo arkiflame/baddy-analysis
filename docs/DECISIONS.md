@@ -419,3 +419,41 @@ report states the thresholds it used.
   branch is merged.
 * **Not done.** The reference screenshots mentioned in the brief did not arrive with it, so the
   direction follows the written description only.
+
+## ui-courts branch (2026-11-06, off ui-redesign, not merged)
+
+### D33. Every court graphic redrawn as a dark tactics board
+* **Tokens in one place.** `web/src/components/court/theme.ts`: panel #0B1220, court surface
+  #111B2E, the scouted player's half #13213A, 1 px teal lines #2DD4BF, 3 px off-white net
+  #F8FAFC extending past the sidelines, text #94A3B8 in Inter, gold #FBBF24 with dark text
+  #0B1220 for the thing that matters, the player's shots solid light grey #E2E8F0, the
+  opponent's dashed slate #64748B; no glows, gradients or shadows; 10 px panel corners. The
+  board is dark in both site modes.
+* **Geometry.** `Geometry.tsx` draws the real singles court to scale in landscape (13.4 m x
+  6.1 m, singles sidelines, short and long service lines, centre lines, the net vertical in the
+  middle), the scouted player on the LEFT and the opponent on the right, halves labelled above.
+  The data arrive in the older frames (full-court with the player at the bottom; half-court from
+  the receiver's view) and are converted by `fromFull` / `fromHalf`. A right-hander on the left
+  faces the net, so the forehand side is the bottom of the screen; for the opponent it is the top.
+  Boards scale to their container (max 680 px wide, so never past 340 px tall; 157 px on a
+  375 px phone) and carry a one-line legend inside the panel instead of paragraph captions.
+* **Views.** Rally: gentle quadratic curves (bow 16% of length, capped at 1 m) with small
+  arrowheads; the key shot gold and 4 px, the others 2 px at 88% opacity; numbered 8 px dots,
+  gold with dark text for the key shot; a cross where the rally ended; by default the key shot
+  and the three before it, plus the next shot when it ended the rally; Prev / Next and "Show
+  whole rally" kept. Habit: one origin dot, arrows to the three most common landing areas with
+  thickness proportional to the share (min 2 px), the most common gold, pills past each
+  arrowhead off the lines, "most pros" shares in the legend. Hero: a gold numbered badge for the
+  number one way to beat the player and a slate ✕ badge for the number one thing to avoid, each
+  with a three-or-four-word pill. Win / loss map: teal-tinted tiles for "wins more here", gold
+  tint for "loses more here", none otherwise, labels in pills. Heat map: a single-hue teal ramp
+  with the usual spot as a gold crosshair.
+* **Readability.** Labels, pills and dots grow with the board's own width through a CSS
+  container query (`--court-font-scale`, 1.05 at full width up to 1.85 under 330 px; pills and
+  dots scale with a CSS transform about their centre). Contrast of every text pair on the board
+  is at least 4.5:1 (lowest: light text on the slate dots, 4.55:1; text on the panel 7.3:1; dark
+  text on gold 11.2:1). Gold and slate also differ in thickness (key shot 4 px vs 2 px) and in
+  dash (the opponent's shots dashed), so colour never carries the meaning alone.
+* **Layout around the boards.** "In short" now puts the board across the section with the
+  three cards in a row beneath it; the Watch-it panel keeps video and board side by side at the
+  full card width and stacks them on phones.

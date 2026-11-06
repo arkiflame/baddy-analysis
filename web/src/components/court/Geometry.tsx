@@ -1,28 +1,38 @@
-/* Court geometry shared by the court components (D30).
+/* Court geometry shared by the court components (D33): a real singles court drawn to scale in
+   LANDSCAPE, the scouted player on the LEFT, the opponent on the right, the net vertical in the
+   middle.
 
-   Full-court frame, in metres: x across the court (0..6.10, viewer's left to right), y along
-   it (0..13.40), net at 6.70. The player's own half is the BOTTOM half (y > 6.70), the
-   opponent's the top half. This is the frame the example-rally strokes are exported in.
+   Board frame, in metres: X along the court (0..13.40, the player's baseline at 0, the net at
+   6.70), Y across it (0..6.10, top to bottom of the screen). A right-handed player on the left
+   faces the net, so their right hand (forehand side) is the BOTTOM of the screen; the opponent
+   faces left, so a right-handed opponent's forehand side is the TOP.
 
-   Half-court ("receiver") frame, as the zone tables use it: x = metres from the centre line
-   toward the player's own right, y = metres from the net into the player's half. `toFull`
-   converts it. On the opponent's half the opponent faces the viewer, so their right is the
-   viewer's left; a right-handed opponent's forehand side is therefore drawn on the LEFT. */
+   The data arrive in two older frames and are converted here:
+   - full-court frame (example rallies): fx across 0..6.10, fy along 0..13.40, the player's
+     half being fy > 6.70 (`fromFull`);
+   - half-court frame (zone tables, base position): x toward the player's own right, y from the
+     net into that player's half (`fromHalf`). */
 
-export const W = 6.1;
-export const L = 13.4;
+import type { ReactNode } from "react";
+import { BOARD, FONT, SIZES } from "./theme";
+
+export const W = 6.1; // across
+export const L = 13.4; // along
 export const NET = 6.7;
 export const SINGLES_HALF = 2.59;
 export const HALF_W = 3.05;
 export const SHORT_SERVICE = 1.98;
 export const DOUBLES_LONG_FROM_BASE = 0.76;
 
-export const S = 100; // px per metre
-export const MARGIN = 0.5; // metres of surface drawn outside the lines
-const LABEL_ROOM = 44; // px above and below for side labels
+export const S = 100; // units per metre
+const MX = 0.4; // metres of panel left and right of the court
+const MT = 0.62; // metres above the court (room for the half labels)
+const MB = 0.3; // metres below
+export const VIEW_W = (L + 2 * MX) * S;
+export const VIEW_H = (W + MT + MB) * S;
+export const VIEW_BOX = `0 0 ${VIEW_W} ${VIEW_H}`;
 
 export type Half = "player" | "opponent";
-export type View = "full" | "player" | "opponent";
 
 export interface Band {
   name: string;
@@ -32,172 +42,191 @@ export interface Band {
 
 export interface ZoneRect {
   zone: string;
-  x: number; // full-court metres, left edge
-  y: number; // top edge
+  x: number; // board metres, left edge (along the court)
+  y: number; // top edge (across)
   w: number;
   h: number;
 }
 
-export const px = (X: number) => (X + MARGIN) * S;
-export const py = (Y: number) => (Y + MARGIN) * S;
+export const px = (X: number) => (X + MX) * S;
+export const py = (Y: number) => (Y + MT) * S;
 
-export const VIEW_W = (W + 2 * MARGIN) * S;
-
-/** viewBox string and its numbers for a full court or one half. */
-export function viewBox(view: View): { vb: string; x0: number; y0: number; w: number; h: number } {
-  const x0 = 0;
-  const w = VIEW_W;
-  if (view === "full") {
-    const y0 = -LABEL_ROOM;
-    const h = (L + 2 * MARGIN) * S + 2 * LABEL_ROOM;
-    return { vb: `${x0} ${y0} ${w} ${h}`, x0, y0, w, h };
-  }
-  if (view === "player") {
-    const y0 = py(NET) - 70;
-    const h = py(L) + LABEL_ROOM + 10 - y0;
-    return { vb: `${x0} ${y0} ${w} ${h}`, x0, y0, w, h };
-  }
-  const y0 = -LABEL_ROOM;
-  const h = py(NET) + 70 - y0;
-  return { vb: `${x0} ${y0} ${w} ${h}`, x0, y0, w, h };
+/** Full-court frame (player at the bottom) -> board frame (player on the left). */
+export function fromFull(fx: number, fy: number): { X: number; Y: number } {
+  return { X: L - fy, Y: fx };
 }
 
-/** Half-court frame -> full-court frame. */
-export function toFull(x: number, y: number, half: Half): { X: number; Y: number } {
-  return half === "player" ? { X: HALF_W + x, Y: NET + y } : { X: HALF_W - x, Y: NET - y };
+/** Half-court frame (x toward the player's own right, y from the net) -> board frame. */
+export function fromHalf(x: number, y: number, half: Half): { X: number; Y: number } {
+  return half === "player" ? { X: NET - y, Y: HALF_W + x } : { X: NET + y, Y: HALF_W - x };
 }
 
-/** Is the forehand side on the viewer's right for this half? */
-export function forehandOnViewerRight(half: Half, fhOnRight: boolean): boolean {
+/** Is the forehand side at the bottom of the screen for this half? */
+export function forehandAtBottom(half: Half, fhOnRight: boolean): boolean {
   return half === "player" ? fhOnRight : false;
 }
 
-/** The six coach zones (front/mid/rear x forehand/backhand) as full-court rectangles. */
+/** The six coach zones (front/mid/rear x forehand/backhand) of one half as board rectangles. */
 export function zoneRects(bands: Band[], half: Half, fhOnRight: boolean): ZoneRect[] {
-  const fhRight = forehandOnViewerRight(half, fhOnRight);
+  const fhBottom = forehandAtBottom(half, fhOnRight);
   const out: ZoneRect[] = [];
   for (const b of bands) {
     const lo = b.lo;
     const hi = Math.min(b.hi, NET);
     for (const side of ["fh", "bh"] as const) {
-      const right = side === "fh" ? fhRight : !fhRight;
-      const x = right ? HALF_W : HALF_W - SINGLES_HALF;
-      const y = half === "player" ? NET + lo : NET - hi;
-      out.push({ zone: `${b.name}_${side}`, x, y, w: SINGLES_HALF, h: hi - lo });
+      const bottom = side === "fh" ? fhBottom : !fhBottom;
+      const y = bottom ? HALF_W : HALF_W - SINGLES_HALF;
+      const x = half === "player" ? NET - hi : NET + lo;
+      out.push({ zone: `${b.name}_${side}`, x, y, w: hi - lo, h: SINGLES_HALF });
     }
   }
   return out;
 }
 
-/** Centre of a zone in full-court metres; "body" and unknown zones -> the half's centre. */
-export function zoneCentre(
-  zone: string | null,
-  bands: Band[],
-  half: Half,
-  fhOnRight: boolean,
-): { X: number; Y: number } {
+/** Centre of a zone in board metres; "body" and unknown zones -> the half's centre. */
+export function zoneCentre(zone: string | null, bands: Band[], half: Half, fhOnRight: boolean): { X: number; Y: number } {
   const r = zone ? zoneRects(bands, half, fhOnRight).find((z) => z.zone === zone) : undefined;
   if (r) return { X: r.x + r.w / 2, Y: r.y + r.h / 2 };
-  return { X: HALF_W, Y: half === "player" ? NET + NET / 2 : NET / 2 };
+  return { X: half === "player" ? NET / 2 : NET + NET / 2, Y: HALF_W };
 }
 
 /** The whole singles half as a rectangle. */
 export function halfRect(half: Half): ZoneRect {
-  return {
-    zone: "any",
-    x: HALF_W - SINGLES_HALF,
-    y: half === "player" ? NET : 0,
-    w: 2 * SINGLES_HALF,
-    h: NET,
-  };
+  return { zone: "any", x: half === "player" ? 0 : NET, y: HALF_W - SINGLES_HALF, w: NET, h: 2 * SINGLES_HALF };
 }
 
-const line = { stroke: "var(--court-white)", strokeWidth: 4, fill: "none" } as const;
+const line = { stroke: BOARD.line, strokeWidth: SIZES.lineW, fill: "none" } as const;
 
-/** A real court: surface, doubles and singles lines, service lines, centre lines, net. */
-export function CourtLines({ view }: { view: View }) {
-  const v = viewBox(view);
+/** Pills, dots and badges grow with `--court-font-scale` (set per container width in
+ *  court.css) around their own centre, so they stay readable when the board is narrow. */
+export const SCALE_WITH_CONTAINER = {
+  transformBox: "fill-box",
+  transformOrigin: "center",
+  transform: "scale(var(--court-font-scale, 1))",
+} as const;
+
+/** The board: dark panel, the court to scale with singles sidelines, short and long service
+ *  lines, centre lines, and the net extending a little past the sidelines. */
+export function CourtLines() {
   return (
     <g aria-hidden="true">
-      <rect x={v.x0} y={v.y0} width={v.w} height={v.h} fill="var(--court-green-out)" />
-      <rect x={px(0)} y={py(0)} width={W * S} height={L * S} fill="var(--court-green)" />
+      <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill={BOARD.bg} />
+      <rect x={px(0)} y={py(0)} width={NET * S} height={W * S} fill={BOARD.myHalf} />
+      <rect x={px(NET)} y={py(0)} width={NET * S} height={W * S} fill={BOARD.surface} />
       {/* outer (doubles) lines */}
-      <rect x={px(0)} y={py(0)} width={W * S} height={L * S} {...line} />
+      <rect x={px(0)} y={py(0)} width={L * S} height={W * S} {...line} />
       {/* singles sidelines */}
-      <line x1={px(HALF_W - SINGLES_HALF)} y1={py(0)} x2={px(HALF_W - SINGLES_HALF)} y2={py(L)} {...line} />
-      <line x1={px(HALF_W + SINGLES_HALF)} y1={py(0)} x2={px(HALF_W + SINGLES_HALF)} y2={py(L)} {...line} />
+      <line x1={px(0)} y1={py(HALF_W - SINGLES_HALF)} x2={px(L)} y2={py(HALF_W - SINGLES_HALF)} {...line} />
+      <line x1={px(0)} y1={py(HALF_W + SINGLES_HALF)} x2={px(L)} y2={py(HALF_W + SINGLES_HALF)} {...line} />
       {/* short service lines */}
-      <line x1={px(0)} y1={py(NET - SHORT_SERVICE)} x2={px(W)} y2={py(NET - SHORT_SERVICE)} {...line} />
-      <line x1={px(0)} y1={py(NET + SHORT_SERVICE)} x2={px(W)} y2={py(NET + SHORT_SERVICE)} {...line} />
+      <line x1={px(NET - SHORT_SERVICE)} y1={py(0)} x2={px(NET - SHORT_SERVICE)} y2={py(W)} {...line} />
+      <line x1={px(NET + SHORT_SERVICE)} y1={py(0)} x2={px(NET + SHORT_SERVICE)} y2={py(W)} {...line} />
       {/* doubles long service lines */}
-      <line x1={px(0)} y1={py(DOUBLES_LONG_FROM_BASE)} x2={px(W)} y2={py(DOUBLES_LONG_FROM_BASE)} {...line} />
-      <line x1={px(0)} y1={py(L - DOUBLES_LONG_FROM_BASE)} x2={px(W)} y2={py(L - DOUBLES_LONG_FROM_BASE)} {...line} />
+      <line x1={px(DOUBLES_LONG_FROM_BASE)} y1={py(0)} x2={px(DOUBLES_LONG_FROM_BASE)} y2={py(W)} {...line} />
+      <line x1={px(L - DOUBLES_LONG_FROM_BASE)} y1={py(0)} x2={px(L - DOUBLES_LONG_FROM_BASE)} y2={py(W)} {...line} />
       {/* centre lines, short service line to baseline on each side */}
-      <line x1={px(HALF_W)} y1={py(0)} x2={px(HALF_W)} y2={py(NET - SHORT_SERVICE)} {...line} />
-      <line x1={px(HALF_W)} y1={py(NET + SHORT_SERVICE)} x2={px(HALF_W)} y2={py(L)} {...line} />
+      <line x1={px(0)} y1={py(HALF_W)} x2={px(NET - SHORT_SERVICE)} y2={py(HALF_W)} {...line} />
+      <line x1={px(NET + SHORT_SERVICE)} y1={py(HALF_W)} x2={px(L)} y2={py(HALF_W)} {...line} />
       {/* net */}
-      <line x1={px(-0.3)} y1={py(NET)} x2={px(W + 0.3)} y2={py(NET)} stroke="var(--net)" strokeWidth={10} />
-      <text x={px(W + 0.3)} y={py(NET) - 10} textAnchor="end" style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }} fill="var(--court-white)">
-        net
-      </text>
+      <line x1={px(NET)} y1={py(-0.25)} x2={px(NET)} y2={py(W + 0.25)} stroke={BOARD.net} strokeWidth={SIZES.netW} />
     </g>
   );
 }
 
-/** Side labels above (opponent's half) or below (player's half) the court. */
-/** "Axelsen's forehand side" -> "forehand" for narrow courts; the half caption says whose. */
-const shortSide = (s: string) => (s.includes("forehand") ? "forehand" : s.includes("backhand") ? "backhand" : s);
-
-export function SideLabels({ half, left, right }: { half: Half; left: string; right: string }) {
-  const y = half === "player" ? py(L) + 34 : py(0) - 16;
+/** "Axelsen" over the left half, "Opponent" over the right. */
+export function HalfLabels({ me }: { me: string }) {
+  const y = py(0) - 22;
   return (
-    <g aria-hidden="true" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)">
-      <text className="court-long" x={px(HALF_W - SINGLES_HALF / 2)} y={y} textAnchor="middle">
-        {left}
+    <g aria-hidden="true" fill={BOARD.text} style={{ fontSize: `calc(var(--court-font-scale, 1) * ${SIZES.font}px)`, fontFamily: FONT, fontWeight: 600 }}>
+      <text x={px(NET / 2)} y={y} textAnchor="middle">
+        {me}
       </text>
-      <text className="court-long" x={px(HALF_W + SINGLES_HALF / 2)} y={y} textAnchor="middle">
-        {right}
-      </text>
-      <text className="court-short" x={px(HALF_W - SINGLES_HALF / 2)} y={y} textAnchor="middle">
-        {shortSide(left)}
-      </text>
-      <text className="court-short" x={px(HALF_W + SINGLES_HALF / 2)} y={y} textAnchor="middle">
-        {shortSide(right)}
+      <text x={px(NET + NET / 2)} y={y} textAnchor="middle">
+        Opponent
       </text>
     </g>
   );
 }
 
-/** Side labels for one half from the player's racket hand. */
-export function sideLabelsFor(half: Half, me: string, fhOnRight: boolean): { left: string; right: string } {
-  if (half === "opponent") return { left: "opponent's forehand side", right: "opponent's backhand side" };
-  return fhOnRight
-    ? { left: `${me}'s backhand side`, right: `${me}'s forehand side` }
-    : { left: `${me}'s forehand side`, right: `${me}'s backhand side` };
+/** A rounded label on the board: dark pill with light text, or gold with dark text. */
+export function Pill({
+  x,
+  y,
+  text,
+  gold = false,
+  anchor = "middle",
+  size = SIZES.fontSmall,
+}: {
+  x: number; // units
+  y: number; // units, vertical centre
+  text: string;
+  gold?: boolean;
+  anchor?: "start" | "middle" | "end";
+  size?: number;
+}) {
+  const w = text.length * size * 0.58 + size * 0.9;
+  const h = size * 1.5;
+  const left = anchor === "middle" ? x - w / 2 : anchor === "start" ? x : x - w;
+  return (
+    <g aria-hidden="true" style={SCALE_WITH_CONTAINER}>
+      <rect x={left} y={y - h / 2} width={w} height={h} rx={h / 2} fill={gold ? BOARD.gold : BOARD.pill} />
+      <text
+        x={left + w / 2}
+        y={y + size * 0.36}
+        textAnchor="middle"
+        fill={gold ? BOARD.goldInk : BOARD.me}
+        style={{ fontSize: `${size}px`, fontFamily: FONT, fontWeight: 600 }}
+      >
+        {text}
+      </text>
+    </g>
+  );
 }
 
-/** Arrowhead markers for rally and habit arrows. */
+/** A small arrowhead marker in one colour. */
 export function ArrowMarkers({ id }: { id: string }) {
   const head = (name: string, fill: string) => (
-    <marker
-      key={name}
-      id={`${id}-${name}`}
-      viewBox="0 0 10 10"
-      refX="8"
-      refY="5"
-      markerWidth="18"
-      markerHeight="18"
-      markerUnits="userSpaceOnUse"
-      orient="auto-start-reverse"
-    >
-      <path d="M 0 0 L 10 5 L 0 10 z" fill={fill} stroke="var(--stroke-outline)" strokeWidth="1" />
+    <marker key={name} id={`${id}-${name}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill={fill} />
     </marker>
   );
   return (
     <defs>
-      {head("me", "var(--stroke-me)")}
-      {head("opp", "var(--stroke-opp)")}
-      {head("habit", "var(--stroke-opp)")}
+      {head("me", BOARD.me)}
+      {head("opp", BOARD.opp)}
+      {head("gold", BOARD.gold)}
     </defs>
+  );
+}
+
+/** The panel every court sits in: rounded dark board, the SVG, and a one-line legend. The
+ *  board scales to its container and never grows past about 340 px tall. */
+export function Board({
+  title,
+  uid,
+  legend,
+  children,
+  className = "",
+  onMouseLeave,
+}: {
+  title: string;
+  uid: string;
+  legend: ReactNode;
+  children: ReactNode;
+  className?: string;
+  onMouseLeave?: () => void;
+}) {
+  return (
+    <figure className={`court-wrap mx-auto w-full max-w-[680px] ${className}`}>
+      <div className="overflow-hidden rounded-[10px]" style={{ background: BOARD.bg }}>
+        <svg viewBox={VIEW_BOX} role="img" aria-labelledby={`${uid}-t`} className="block h-auto w-full select-none" onMouseLeave={onMouseLeave}>
+          <title id={`${uid}-t`}>{title}</title>
+          {children}
+        </svg>
+        <figcaption className="truncate px-3 pb-2 text-xs" style={{ color: BOARD.text }} title={typeof legend === "string" ? legend : undefined}>
+          {legend}
+        </figcaption>
+      </div>
+    </figure>
   );
 }

@@ -16,7 +16,7 @@ import {
 import { HABIT_ARROWS, HabitArrows } from "@/components/court/HabitArrows";
 import { HeatCourt } from "@/components/court/HeatCourt";
 import { HeroCourt } from "@/components/court/HeroCourt";
-import { ZoneCourt, ZoneLegend } from "@/components/court/ZoneCourt";
+import { ZoneCourt } from "@/components/court/ZoneCourt";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -173,7 +173,6 @@ function ZoneExplorer({ data, me }: { data: PlayerFile; me: string }) {
         }
         title={title}
       />
-      <ZoneLegend me={me} />
       <Reveal label="Show the tables">
         <RateTable
           rows={rows}
@@ -260,6 +259,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
       role: it.insight.role,
       zone: it.insight.zone,
       shot: it.insight.shot,
+      split: it.insight.split,
       kind: (it.insight.delta ?? 0) < 0 ? ("strong" as const) : ("weak" as const),
     }));
 
@@ -338,7 +338,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
           }
         >
           {(beat || avoid || watchHabit) && (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,300px)_1fr]">
+            <div className="grid gap-4">
               {heroItems.length > 0 && (
                 <div className="card-surface p-3">
                   <HeroCourt
