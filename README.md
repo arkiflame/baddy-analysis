@@ -1,5 +1,41 @@
 # badminton-tactics
 
+Scouting reports for professional badminton singles players, built from 94 annotated matches,
+where every claim compares the player with typical pros in the same situation and carries its
+sample size and 95% interval.
+
+**Live demo:** <link> (placeholder; deployed from `web/`, see [Deploying to Vercel](#deploying-to-vercel))
+
+![Viktor Axelsen's player page: scouting summary, coach cards, tabs](docs/screenshot-player.png)
+
+**Three headline findings** (every number comes from a command in this repo; see
+[Results](#results-all-numbers-from-commands-in-this-repo-2026-11-05)):
+
+1. **Scouting.** Opponents gain little by attacking Viktor Axelsen's body: he loses the point
+   within two shots 7% of the time after a shot to his body (n=97) against 20% for typical pros
+   (difference -13 points, 95% CI -18 to -5), a pattern selected in 11 of 20 leave-one-match-out
+   folds. His one all-game weakness, pushes and rushes to his rear backhand (35% vs 23%, +11,
+   CI +2 to +23, n=81), is selected in only 1 of 20 folds and is shown as less stable.
+2. **A negative result, stated first.** Expected points from shot and position data has no
+   signal mid-rally in elite singles (holdout AUC 0.50 on strokes that did not end the rally);
+   the same features reach 0.79 only on the final stroke, which is classifying how an
+   already-decisive stroke ends. A model allowed to see the final landing zone reports 0.986,
+   which is what a careless xP model would show.
+3. **Do the insights replicate?** The top-5 insights of the 6 players with 9+ matches were
+   re-tested on matches they were not found on, under three schemes, reported together:
+   leave-one-match-out 12 replicate / 17 same direction / 1 fail / 0 untestable;
+   leave-one-opponent-out 8 / 15 / 2 / 5; holdout 1 / 8 / 6 / 15. The holdout has 1-3 matches
+   per player, which cannot resolve differences of a few points, so its strict replicates are few.
+
+**Tech stack.** Python 3.12 (pandas, numpy, scipy, scikit-learn, PyTorch for the sequence
+models), uv, pytest (78 tests), ruff; a statically exported Next.js 16 / React 19 / TypeScript /
+Tailwind v4 site in `web/` that renders precomputed JSON and computes nothing; data from
+ShuttleSet and ShuttleSet22 (CoachAI-Projects, MIT).
+
+---
+
+## The technical README
+
 A badminton **tactical analyzer**: it finds the rally patterns that win and lose points for a
 player, the kind of insight a coach gives, rather than shot counts. It works on 94 professional
 singles matches (ShuttleSet + ShuttleSet22, 81,939 annotated strokes) and produces a per-player
@@ -26,7 +62,13 @@ A report (example: [docs/examples/Viktor_AXELSEN.md](docs/examples/Viktor_AXELSE
   pattern is selected in at least half of the leave-one-match-out folds ("stable in 15 of 20
   folds" is printed next to each), and flagged `tentative` when the interval on the difference
   is wider than 20 points or n is under 60.
-- **How to play against the player** and **what the player should fix**, in coach language.
+- **Scouting summary**: 2-4 one-sentence takeaways in coach language, without numbers, from the
+  top insights that are stable and not tentative (the numbers sit one click away on the site).
+- **How to play against the player** (what not to do, because the player handles it better than
+  typical pros, plus a pointer to the weaknesses) and **what the player should fix** (the
+  weaknesses as training priorities). Each situation appears in one section only. "With 95%
+  confidence" means the interval on the difference clears zero by at least half a point; a
+  candidate whose bound rounds to 0 points goes to a "possible, not confident" list (D29).
 - **The evidence**: every danger table (P(point lost within two shots | shot type x zone), for
   shots faced and shots played) with the typical-pro rate and the difference's 95% interval.
 - **Position maps** (positions at hit time only): heatmaps on a court drawn to scale, base
@@ -46,7 +88,9 @@ Zones are computed from the **receiver's** point of view with a per-player hande
 
 `web/` is a statically exported Next.js site (App Router, TypeScript, Tailwind) that renders the
 same reports for every player with at least 3 matches: a searchable player list, a player page
-(scouting summary on top, tabs for insights, habits, set plays, position maps and xP), an
+(plain-language scouting summary on top with the n / interval / difference pills behind a
+"Show the numbers" toggle, then the two coach cards, then tabs for insights, habits, set plays,
+position maps and xP), an
 interactive SVG court drawn to scale with the seven coach zones coloured by the player-vs-typical-pro
 difference and hover / keyboard tooltips with n and the 95% interval, and a Methods page. The site
 computes nothing: every number comes from JSON written by `scripts/export_web.py`, which calls the
@@ -74,7 +118,7 @@ npm run build                                 # static site in web/out
    branches. The site has no server component at runtime, so it can equally be hosted on GitHub
    Pages or any static host by uploading `web/out/`.
 
-## Results (all numbers from commands in this repo, 2026-11-04)
+## Results (all numbers from commands in this repo, 2026-11-05)
 
 **Viktor Axelsen** (20 matches, 1,394 rallies, 58.1% rally win rate), `python -m tactics report --player "Viktor AXELSEN"`:
 
@@ -111,7 +155,7 @@ use it when present; xP runs on the CPU in seconds).
 ```powershell
 uv sync --extra dev                         # core: pandas, numpy, scipy, matplotlib
 uv run python scripts/fetch_shuttleset.py   # ShuttleSet + ShuttleSet22 -> data/raw/ (MIT)
-uv run pytest                               # 72 tests
+uv run pytest                               # 78 tests
 # optional
 uv sync --extra dev --extra m3 --extra video   # torch (CUDA 12.8 wheels), scikit-learn, opencv
 uv run python scripts/fetch_tracknetv3.py      # TrackNetV3 source + weights (MIT, checksummed)
@@ -142,9 +186,9 @@ scripts/         fetch_*.py, zone_diagnostics.py, m3_baseline.py, xp_baseline.py
                  threshold_sensitivity.py, export_web.py
 web/             Next.js static site (src/app pages, src/components Court / PlayerView / Tables,
                  public/data the exported JSON)
-docs/            DATASET.md, DECISIONS.md (D1-D26), EVALUATION.md, XP.md, M3_BASELINE.md,
-                 ROADMAP.md, WALKTHROUGH.md (modules, 20 interview questions)
-tests/           72 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
+docs/            DATASET.md, DECISIONS.md (D1-D29), EVALUATION.md, XP.md, M3_BASELINE.md,
+                 ROADMAP.md, WALKTHROUGH.md (modules, 24 interview questions), screenshot-player.png
+tests/           78 tests: geometry, zones, stats (incl. Newcombe's published example), loader on
                  synthetic games, analyses / report / positions / habits / xp / evaluation on a
                  synthetic table with planted patterns, tools, TrackNet
 ```

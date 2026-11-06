@@ -342,6 +342,10 @@ the position grids as a heatmap. Why static: nothing on the site needs a server,
 precomputed and reviewable in the repo, and a static site is the cheapest thing to host and the
 hardest to break. Why the site computes nothing: the honesty rule ("never show a number the
 export didn't produce") is easy to audit when the only arithmetic in the frontend is formatting.
+Polish pass (D29): the page opens with a plain-language scouting summary (stable, non-tentative
+insights only, numbers behind a "Show the numbers" toggle), the two coach cards never repeat a
+situation (weaknesses are training priorities, the opponent card points at them), and
+candidates whose interval bound rounds to 0 points are listed as "possible, not confident".
 
 21. *Why export JSON instead of calling the Python code from the site?*  Separation of trust: the
     numbers are produced once, by the code that is tested, and committed; the UI is a renderer
@@ -362,3 +366,11 @@ export didn't produce") is easy to audit when the only arithmetic in the fronten
     duplicated in text, contrast was chosen from a validated palette with separate dark-mode
     steps, and the "tentative" and "less stable" marks are text badges with an icon. The score is
     recorded with its command in `docs/DECISIONS.md` (D28), not quoted from memory.
+24. *Why hide the numbers behind a toggle if honesty is the point?*  Because two audiences read
+    the same page. A coach wants the sentence ("smashes to his mid forehand win fewer points
+    than against typical pros"); a reviewer wants n, the interval and the fold count. Putting the
+    pills one click away serves the first without taking anything from the second, and the
+    honesty marks that change the meaning of a sentence ("tentative", "less stable", "possible,
+    not confident") stay visible, since a reader must not need a click to learn that a claim is
+    weak. The sentences themselves are generated only from insights that are stable and not
+    tentative, so a numbers-free line is never a weaker claim in disguise.

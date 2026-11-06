@@ -254,3 +254,36 @@ report states the thresholds it used.
 * Colour: the reference data-viz palette (blue sequential ramp, blue <-> red diverging pair with a
   grey midpoint, separate dark-mode steps); meaning is always also carried by text or pattern.
 * Lighthouse (2026-11-04, `npx lighthouse http://localhost:3999/<page> --only-categories=accessibility,best-practices,performance --chrome-flags=--headless=new` against `npx serve out -l 3999` after `npm run build`): accessibility 100 on `/`, `/players/viktor-axelsen/` and `/methods/` (target: >= 90); best practices 96 on all three, the only failing audit being console 404s for Next's segment-prefetch `.txt` files under `serve`, which does not affect the pages; performance 100 / 98 / 100. Horizontal overflow checked at 390 px with puppeteer-core: scrollWidth equals the viewport on all three pages.
+
+### D29. Plain language first; one situation, one card; "possible" is not "confident" (2026-11-05)
+* **Scouting summary.** Each report and player page opens with up to four one-sentence takeaways
+  in coach language and without numbers (`report.takeaways`), generated only from top insights
+  that are stable (selected in at least half of the leave-one-match-out folds) and not
+  tentative. On the site the n, the rate against typical pros, the difference with its interval
+  and the fold count sit behind a "Show the numbers" toggle on every item; the same numbers stay
+  in the evidence tables. Players with no stable, non-tentative insight get a sentence saying so
+  rather than a weaker takeaway.
+* **Coach cards without repeats.** A weakness used to appear both as "push to his rear backhand"
+  under *How to play against* and as "defending pushes to the rear backhand" under *What to fix*.
+  Now the weaknesses live once, as training priorities under *What <player> should fix*, and
+  *How to play against* lists the strengths (what an opponent should not do) plus one line that
+  points at the training priorities as the places to attack. Rule: a situation appears on one
+  card only; the other card refers to it.
+* **"With 95% confidence" means clearing zero by half a point.** The candidate flag in
+  `stats.py` is strict (`delta_lo > 0` or `delta_hi < 0`), but a bound of +0.4 points prints as
+  "+0", and a reader who sees "+0 to +14" next to "with 95% confidence" is right to object.
+  `report.borderline` marks candidates whose bound nearest zero is below `BORDERLINE_PTS`
+  (0.005); they are excluded from both cards and listed under *Possible, not confident* with the
+  reason. Zero bounds print as "0" (never "-0"). Tested in `tests/test_report.py`.
+* **Landing page.** A hero with one sentence, three headline cards (the demo player's first
+  takeaway, the xP negative result, the replication totals for all three schemes) and the data
+  credit, all read from the export; the README's recruiter section repeats the same three with
+  the numbers and a screenshot of the Axelsen page (`docs/screenshot-player.png`).
+* Checks (2026-11-05, after `python scripts/export_web.py` (1035 s, 27 players) and `npm run build`,
+  against `npx serve out -l 3999`): `npx lighthouse http://localhost:3999/<page>
+  --only-categories=accessibility,best-practices,performance --chrome-flags=--headless=new` gives
+  accessibility 100 on `/`, `/players/viktor-axelsen/` and `/methods/`; best practices 96 on all
+  three (the console 404s for Next's segment-prefetch `.txt` files under `serve`, as in D28);
+  performance 98 / 96 / 99. Horizontal overflow at 390 px with puppeteer-core: scrollWidth equals
+  the viewport on all three pages. `docs/screenshot-player.png` is the Axelsen page at 1280 px
+  from the same build with the first "Show the numbers" toggle open.

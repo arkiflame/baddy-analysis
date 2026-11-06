@@ -1,6 +1,6 @@
 # Tactical report: Viktor AXELSEN
 
-_Generated 2026-11-04 by `python -m tactics report --player 'Viktor AXELSEN'`._
+_Generated 2026-11-05 by `python -m tactics report --player 'Viktor AXELSEN'`._
 
 ## Coverage
 
@@ -10,6 +10,15 @@ _Generated 2026-11-04 by `python -m tactics report --player 'Viktor AXELSEN'`._
 - Opponents: Anders ANTONSEN, Anthony Sinisuka GINTING, CHEN Long, Hans-Kristian Solberg VITTINGHUS, Jonatan CHRISTIE, Kento MOMOTA, Kodai NARAOKA, Kunlavut VITIDSARN, LEE Zii Jia, LIEW Daren, Lakshya SEN, NG Ka Long Angus, Rasmus GEMKE, SHI Yuqi, ZHAO Jun Peng
 - Shot vocabulary: 10 coarse types; minimum n = 30 on both sides of every comparison; handedness: right
 - "Typical pros" = all other players in the dataset in the same situation (receiving the same shot to the same zone, or playing it); Axelsen is never part of Axelsen's own reference.
+
+## Scouting summary
+
+The takeaways a coach would act on: the top insights that are stable across the leave-one-match-out folds and not tentative, without numbers. The numbers are in the table below and in the evidence tables.
+
+- Axelsen's body is better covered than typical pros': attacking it wins less than usual.
+- Net shots to Axelsen's front forehand win fewer points than they do against typical pros.
+- Smashes to Axelsen's mid forehand win fewer points than they do against typical pros.
+- Whatever Axelsen plays to the opponent's mid forehand costs fewer points than typical pros'.
 
 ## Top insights
 
@@ -25,22 +34,33 @@ Where Axelsen differs most from typical pros, among patterns a coach can act on 
 
 ## How to play against Axelsen
 
-For an opponent. Each line is a situation where Axelsen's record differs from typical pros with 95% confidence; 'loses within two shots' means the point ended within two strokes of that shot and Axelsen lost it.
+For an opponent: what not to do, because Axelsen handles it better than typical pros with 95% confidence (the interval on the difference excludes zero by at least half a point), and where to attack. 'Loses within two shots' means the point ended within two strokes of that shot and Axelsen lost it. Each situation appears in one section only.
 
-- **In game 3, clear more.** Axelsen loses the point within two shots 24% of the time there, vs 11% for typical pros (n=46).
-- **Push or rush to Axelsen's rear backhand.** Axelsen loses the point within two shots 35% of the time there, vs 23% for typical pros (n=81).
-- **In game 3, attack Axelsen's front backhand.** Axelsen loses the point within two shots 18% of the time there, vs 11% for typical pros (n=118).
 - **Axelsen's body is well covered.** Axelsen loses within two shots only 7% of the time, vs 20% for typical pros (n=97).
 - **Smashes are less effective than usual.** Axelsen loses within two shots only 18% of the time, vs 26% for typical pros (n=967).
 - **Don't count on net shots to Axelsen's front forehand.** Axelsen loses within two shots only 7% of the time, vs 14% for typical pros (n=751).
+- **Don't count on smashes to Axelsen's mid forehand.** Axelsen loses within two shots only 16% of the time, vs 23% for typical pros (n=472).
+- **Be ready for anything Axelsen plays to your mid forehand.** After them Axelsen loses within two shots only 6% of the time, a strength, vs 10% for typical pros (n=1342).
+- **Be ready for Axelsen's lobs.** After them Axelsen loses within two shots only 8% of the time, a strength, vs 12% for typical pros (n=1748).
+- **Attack the two situations listed under 'What Axelsen should fix': that is where Axelsen loses more often than typical pros.**
 
 ## What Axelsen should fix
 
-Situations where Axelsen loses more often than typical pros.
+Training priorities: situations where Axelsen loses more often than typical pros with 95% confidence.
 
 - **In game 3, defending clears.** Axelsen loses the point within two shots 24% of the time there, vs 11% for typical pros (n=46).
 - **Defending pushes and rushes to the rear backhand.** Axelsen loses the point within two shots 35% of the time there, vs 23% for typical pros (n=81).
-- **In game 3, covering the front backhand.** Axelsen loses the point within two shots 18% of the time there, vs 11% for typical pros (n=118).
+
+### Possible, not confident
+
+Candidates whose 95% interval on the difference excludes zero by less than half a point: printed to whole points it touches zero, so they are leads, not findings.
+
+- **At 18+ in a game, when Axelsen plays anything to the opponent's mid forehand:** possibly less costly than for typical pros (5% vs 11%, n=165); the 95% interval on the difference touches zero once rounded to whole points (-8 to 0).
+- **When opponents play a net shot to Axelsen's front backhand:** possibly less costly than for typical pros (11% vs 14%, n=730); the 95% interval on the difference touches zero once rounded to whole points (-5 to 0).
+- **In game 3, when opponents play anything to Axelsen's front backhand:** possibly more costly than for typical pros (18% vs 11%, n=118); the 95% interval on the difference touches zero once rounded to whole points (0 to +14).
+- **When Axelsen plays anything to the opponent's mid backhand:** possibly less costly than for typical pros (7% vs 9%, n=1189); the 95% interval on the difference touches zero once rounded to whole points (-3 to 0).
+- **When Axelsen plays a net shot to the opponent's front forehand:** possibly less costly than for typical pros (7% vs 10%, n=658); the 95% interval on the difference touches zero once rounded to whole points (-4 to 0).
+- **When opponents lob, wherever it lands:** possibly less costly than for typical pros (8% vs 10%, n=919); the 95% interval on the difference touches zero once rounded to whole points (-4 to 0).
 
 ## The evidence: danger tables
 
