@@ -1,4 +1,4 @@
-# badminton-tactics
+# baddy-analysis
 
 One-page scouting reports for the world's best badminton singles players: how to beat them,
 what they do well, their habits and movement, with a real-match video for each pattern.

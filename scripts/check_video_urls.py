@@ -35,7 +35,7 @@ def fetch_oembed(url: str) -> tuple[int, dict]:
     """(HTTP status, parsed JSON or {}) for one video URL."""
     req = urllib.request.Request(
         OEMBED + urllib.parse.quote(url, safe=""),
-        headers={"User-Agent": "badminton-tactics url check"},
+        headers={"User-Agent": "baddy-analysis url check"},
     )
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:

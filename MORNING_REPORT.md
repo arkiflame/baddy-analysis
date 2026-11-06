@@ -98,7 +98,7 @@ git checkout main && git merge --ff-only features-v3     # no merge commit
 uv run pytest                                            # on main
 git push origin main
 gh repo view --json defaultBranchRef                      # must say main
-gh api repos/arkiflame/badminton-tactics/readme -H "Accept: application/vnd.github.raw" | head
+gh api repos/arkiflame/baddy-analysis/readme -H "Accept: application/vnd.github.raw" | head
 ```
 
 `overnight-1` and `features-v3` on origin were left as they were (`features-v3` on origin still
