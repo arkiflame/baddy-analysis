@@ -300,18 +300,51 @@ report states the thresholds it used.
     --out outputs/evaluation_raw.md
   ```
 
-## ui-plain-language branch (2026-11-06, in progress)
+## ui-plain-language branch (2026-11-06)
 
 ### D30. Plain language, real footage, no analysis change
-* **Status.** The Python side is done and tested (97 tests): `src/tactics/plain.py` (headline,
-  evidence, "1 in N" frequencies, player-named court areas, plain warnings, habit / opening /
-  movement / finishing sentences), `src/tactics/footage.py` (up to three example rallies per
-  insight from matches with live footage, YouTube embed and watch links starting 5 s before the
-  pattern stroke, rally stroke arrows in a player-at-the-bottom court frame) and
-  `scripts/check_video_urls.py` (YouTube oEmbed, no download; 43 of 43 ShuttleSet URLs live on
-  2026-11-06, all BWF TV; ShuttleSet22 has no URLs, so players whose matches are all there get no
-  "Watch it" button). `scripts/export_web.py` writes the new fields. The web UI, README and
-  screenshots for this branch are not done yet; `web/` still renders the old fields.
+* **What changed.** Presentation only; no analysis or number changed. `src/tactics/plain.py`
+  turns each insight into a bold coaching headline ("Don't attack Axelsen's body.") and one
+  sentence of evidence in "about 1 time in 14" form (whole percentages once either side reaches
+  30%), names court areas as players do, and writes the warnings, habit, opening, movement and
+  finishing sentences. `src/tactics/footage.py` picks up to three example rallies per insight
+  from the strokes the danger table counted (a weakness: a rally lost within two shots; a
+  strength: one not lost quickly and won), from matches whose YouTube URL
+  `scripts/check_video_urls.py` found live (oEmbed, no download; 43 of 43 ShuttleSet URLs live on
+  2026-11-06, all BWF TV; ShuttleSet22 has no URLs, so 7 of 27 players have no "Watch it"
+  button; 246 of 349 exported insights carry an example). The site (`web/`) renders headline,
+  evidence and warnings in the main text, the exact figures with one-sentence explanations
+  behind "Show the numbers", an embedded youtube-nocookie player that loads only after "Watch
+  it" is pressed with the rally's shot sequence drawn on a court, realistic SVG courts (strong /
+  weak zones in validated blue / red with the meaning written inside each zone, habit arrows
+  with thickness = share, a hero court with the three biggest takeaways, a heat map), a "How to
+  read this page" box, and the order summary → how to beat → what the player does well →
+  habits → movement → how we know. The Methods page is a four-step explainer with the technical
+  version folded under each step.
+* **Jargon check.** `scripts/jargon_check.py` parses the built pages, drops everything one
+  click away (`data-technical`, `<details>` bodies, hidden elements) and lists every banned
+  term left in the main text; `tests/test_jargon.py` covers the parser and asserts the built
+  site is clean. Result on this build: 0 banned terms in the main text of 31 pages. A wider
+  sweep for softer words (median, interval, replication, lower bound, ...) found only
+  "predict" / "model" in the coin-flip sentence, which are everyday words, and two
+  screen-reader table captions, which were reworded.
+* **Export.** The full re-export (`python scripts/export_web.py`) wrote all 27 player files
+  and was then stopped by the system for low machine memory during the replication step, before
+  `index.json`. The index was assembled from the 27 player files; its dataset, settings, xP,
+  live and evaluation blocks are those of the 2026-11-05 export, produced by the same code on
+  the same data (the evaluation totals equal the `tactics evaluate` run in `docs/EVALUATION.md`),
+  and the file says so in an `index_note` field. Re-running the export restores a single-run
+  index.
+* **Checks.** `npm run build` 32 pages; `npx tsc --noEmit` and `npx eslint src` clean;
+  `uv run pytest` 99 tests pass (19 new for plain wording, footage picking, the URL check and the
+  jargon check); ruff clean; 390 px viewport: no horizontal overflow on /, a player page and
+  Methods; dark mode checked by screenshot. Before / after: `docs/before-player.png`,
+  `docs/before-home.png` (main at 9ae6bbd) against `docs/after-player.png`,
+  `docs/screenshot-home.png`; README screenshots `docs/screenshot-home.png`,
+  `docs/screenshot-player.png`, `docs/screenshot-watch.png`.
+* **Embeddability.** Whether a BWF video allows embedding cannot be checked without an API key;
+  a video that blocks it shows YouTube's own "watch on YouTube" link inside the frame, and every
+  panel also links to the moment on youtube.com.
 * **Pronouns.** The dataset does not record how a player wants to be referred to, so every
   sentence names the player by surname ("How to beat Axelsen") instead of "him" or "her".
 * **Stability wording.** "Selected in 15 of 20 folds" is written as "It held up in 15 of 20

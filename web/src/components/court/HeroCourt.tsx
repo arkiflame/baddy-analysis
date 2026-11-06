@@ -51,6 +51,7 @@ export function HeroCourt({
   const top = sideLabelsFor("opponent", me, fhOnRight);
   const shown = items.slice(0, 3);
   const offsets: Record<string, number> = {};
+  const seen: Record<string, number> = {};
 
   return (
     <figure className="mx-auto w-full max-w-[560px]">
@@ -65,7 +66,7 @@ export function HeroCourt({
         <text x={px(0)} y={py(NET) - 28} fontSize="15" fill="var(--court-white)" aria-hidden="true">
           {me}&apos;s half: shots {me} receives
         </text>
-        {shown.map((it) => {
+        {[...shown].sort((a, b) => Number(a.zone === "body") - Number(b.zone === "body")).map((it) => {
           const half: Half = it.role === "faced" ? "player" : "opponent";
           const fill = it.kind === "strong" ? "var(--zone-strong)" : "var(--zone-weak)";
           const words = it.kind === "strong" ? `${me} wins more` : `${me} loses more`;
@@ -80,25 +81,34 @@ export function HeroCourt({
             c = { X: HALF_W - 1.6 + k * 1.6, Y: half === "player" ? NET + 1.0 : NET - 1.0 };
           }
           const label = `${it.n}. ${it.zone ? areaShort(it.zone) : shotWords(it.shot ?? null)}: ${words}`;
+          const zoneKey = it.zone ? `${half}:${it.zone}` : null;
+          const dup = zoneKey ? (seen[zoneKey] ?? 0) : 0;
+          if (zoneKey) seen[zoneKey] = dup + 1;
+          const bx = px(c.X) - (it.zone ? 0 : 46) + dup * 48;
           return (
             <g key={it.n} role="img" aria-label={label}>
-              {rect && (
+              {rect && dup === 0 && (
                 <rect x={px(rect.x) + 4} y={py(rect.y) + 4} width={rect.w * S - 8} height={rect.h * S - 8} rx={6} fill={fill} fillOpacity="0.9" />
               )}
-              {it.zone === "body" && <circle cx={px(c.X)} cy={py(c.Y)} r={0.5 * S} fill={fill} fillOpacity="0.9" stroke="var(--court-white)" strokeWidth="3" />}
-              {!it.zone && (
-                <rect x={px(c.X) - 70} y={py(c.Y) - 24} width={140} height={48} rx={8} fill={fill} fillOpacity="0.9" />
+              {it.zone === "body" && dup === 0 && (
+                <>
+                  <circle cx={px(c.X)} cy={py(c.Y)} r={0.5 * S + 4} fill="none" stroke="var(--stroke-outline)" strokeWidth="3" />
+                  <circle cx={px(c.X)} cy={py(c.Y)} r={0.5 * S} fill={fill} stroke="var(--court-white)" strokeWidth="5" />
+                </>
               )}
-              <circle cx={px(c.X) - (it.zone ? 0 : 46)} cy={py(c.Y)} r={20} fill="#ffffff" stroke="var(--stroke-outline)" strokeWidth="2" />
-              <text x={px(c.X) - (it.zone ? 0 : 46)} y={py(c.Y) + 8} textAnchor="middle" fontSize="22" fontWeight="700" fill="#0b0b0b">
+              {!it.zone && (
+                <rect x={px(c.X) - 70} y={py(c.Y) - 24} width={215} height={48} rx={8} fill={fill} fillOpacity="0.9" />
+              )}
+              <circle cx={bx} cy={py(c.Y)} r={20} fill="#ffffff" stroke="var(--stroke-outline)" strokeWidth="2" />
+              <text x={bx} y={py(c.Y) + 8} textAnchor="middle" fontSize="22" fontWeight="700" fill="#0b0b0b">
                 {it.n}
               </text>
               {!it.zone && (
-                <text x={px(c.X) + 4} y={py(c.Y) + 6} textAnchor="middle" fontSize="15" fontWeight="600" fill="var(--zone-ink)">
+                <text x={px(c.X) - 18} y={py(c.Y) + 6} textAnchor="start" fontSize="15" fontWeight="600" fill="var(--zone-ink)">
                   {shotWords(it.shot ?? null)}
                 </text>
               )}
-              {rect && (
+              {rect && dup === 0 && (
                 <text x={px(rect.x + rect.w / 2)} y={py(Math.min(rect.y + rect.h / 2 + 0.42, L - 1.0))} textAnchor="middle" fontSize="15" fill="var(--zone-ink)">
                   {words}
                 </text>

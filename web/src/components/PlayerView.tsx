@@ -263,7 +263,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
         }
       >
         {data.summary.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr]">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,360px)_1fr]">
             <HeroCourt
               items={heroItems}
               me={me}
@@ -412,7 +412,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
       <Section
         id="movement"
         title="Movement"
-        lead={`Where ${me} stands and how far ${me} is pulled. Positions are known only at the moment a shot is hit, so every distance is a lower bound.`}
+        lead={`Where ${me} stands and how far ${me} is pulled. Positions are known only at the moment a shot is hit, so real distances are a little longer than these.`}
       >
         <p className="max-w-[70ch]">{p.plain_base}</p>
         <HeatCourt

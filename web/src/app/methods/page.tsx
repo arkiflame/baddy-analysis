@@ -155,7 +155,7 @@ export default async function Methods() {
             </p>
             <div className="overflow-x-auto rounded border border-line bg-surface text-[15px]">
               <table className="tbl">
-                <caption className="sr-only">Replication totals by scheme</caption>
+                <caption className="sr-only">How many findings held up, for each way of testing</caption>
                 <thead>
                   <tr>
                     <th scope="col">How we tested</th>
@@ -187,7 +187,7 @@ export default async function Methods() {
               <summary className="cursor-pointer font-medium">Per player, technical</summary>
               <div className="overflow-x-auto pt-3">
                 <table className="tbl">
-                  <caption className="sr-only">Replication per player and scheme</caption>
+                  <caption className="sr-only">The same counts per player and way of testing</caption>
                   <thead>
                     <tr>
                       <th scope="col">player</th>
