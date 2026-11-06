@@ -299,3 +299,25 @@ report states the thresholds it used.
     --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --player "Kento MOMOTA" \
     --out outputs/evaluation_raw.md
   ```
+
+## ui-plain-language branch (2026-11-06, in progress)
+
+### D30. Plain language, real footage, no analysis change
+* **Status.** The Python side is done and tested (97 tests): `src/tactics/plain.py` (headline,
+  evidence, "1 in N" frequencies, player-named court areas, plain warnings, habit / opening /
+  movement / finishing sentences), `src/tactics/footage.py` (up to three example rallies per
+  insight from matches with live footage, YouTube embed and watch links starting 5 s before the
+  pattern stroke, rally stroke arrows in a player-at-the-bottom court frame) and
+  `scripts/check_video_urls.py` (YouTube oEmbed, no download; 43 of 43 ShuttleSet URLs live on
+  2026-11-06, all BWF TV; ShuttleSet22 has no URLs, so players whose matches are all there get no
+  "Watch it" button). `scripts/export_web.py` writes the new fields. The web UI, README and
+  screenshots for this branch are not done yet; `web/` still renders the old fields.
+* **Pronouns.** The dataset does not record how a player wants to be referred to, so every
+  sentence names the player by surname ("How to beat Axelsen") instead of "him" or "her".
+* **Stability wording.** "Selected in 15 of 20 folds" is written as "It held up in 15 of 20
+  re-checks, each one leaving out a different match", which is what the number measures; the
+  brief's "showed up in 15 of his 20 matches" would claim per-match occurrence the check does
+  not test.
+* **Embeds only.** youtube-nocookie.com iframes plus a plain YouTube link; nothing from a
+  broadcast is stored. A video that disables embedding still shows YouTube's own "watch on
+  YouTube" link inside the frame; embeddability cannot be checked without an API key.

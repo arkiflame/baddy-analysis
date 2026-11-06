@@ -12,13 +12,20 @@ from __future__ import annotations
 import datetime as dt
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from tactics import habits, positions, xp
-from tactics.analyses import AnalysisSettings, PlayerReport, analyse_player, coverage
+from tactics import footage, habits, plain, positions, xp
+from tactics.analyses import (
+    AnalysisSettings,
+    PlayerReport,
+    analyse_player,
+    coverage,
+    player_strokes,
+)
 from tactics.config import PlayerConfig, ZoneConfig
 from tactics.evaluation import replicate_all, selection_frequency, summary_table
 from tactics.report import (
@@ -103,11 +110,27 @@ RATE_COLS = [
 ]
 
 
-def insight_record(row: pd.Series, player: str, s: AnalysisSettings, rank: int | None) -> dict:
+ExamplesFor = Callable[[pd.Series], list[dict]]
+
+
+def insight_record(
+    row: pd.Series,
+    player: str,
+    s: AnalysisSettings,
+    rank: int | None,
+    examples_for: ExamplesFor | None = None,
+) -> dict:
+    """One insight as JSON: the report's sentence and numbers, the plain-language headline,
+    evidence and warnings (D30), and the example rallies with footage when there are any."""
     p = _parse(row, s)
     rec = {
         "rank": rank,
         "text": describe(row, player, s),
+        "headline": plain.headline(row, player, s),
+        "evidence": plain.evidence(row, player, s),
+        "held_up": plain.held_up(row, player),
+        "flags": plain.flags(row),
+        "examples": examples_for(row) if examples_for else [],
         "analysis": str(row.analysis),
         "key": str(row.key),
         "role": "faced" if p["faced"] else "hit",
@@ -141,11 +164,19 @@ def _with_stability(row: pd.Series, stability: pd.DataFrame | None) -> pd.Series
     return row
 
 
-def coach_json(rep: PlayerReport, s: AnalysisSettings, stability: pd.DataFrame | None) -> dict:
+def coach_json(
+    rep: PlayerReport,
+    s: AnalysisSettings,
+    stability: pd.DataFrame | None,
+    examples_for: ExamplesFor | None = None,
+) -> dict:
     """The coach cards (D29): `against` = strengths an opponent should not feed, plus
     `against_reference` pointing at the weaknesses; `fix` = the weaknesses as training
-    priorities; `possible` = borderline candidates with the reason they are not confident."""
+    priorities; `possible` = borderline candidates with the reason they are not confident.
+    The site shows `fix` as "How to beat <player>" and `against` as "What <player> does well",
+    each item led by its plain-language headline (D30)."""
     weak, strong, maybe = coach_rows(rep, s)
+    me = surname(rep.player)
 
     def items(rows, bullet):
         out = []
@@ -156,27 +187,39 @@ def coach_json(rep: PlayerReport, s: AnalysisSettings, stability: pd.DataFrame |
                 {
                     "title": title,
                     "detail": detail,
-                    "insight": insight_record(r, rep.player, s, None),
+                    "insight": insight_record(r, rep.player, s, None, examples_for),
                 }
             )
         return out
 
     return {
         "against": items(strong, against_bullet),
-        "against_reference": against_reference(surname(rep.player), len(weak)),
+        "against_reference": against_reference(me, len(weak)),
+        "against_reference_plain": (
+            f"The places to attack are listed under “How to beat {me}”." if weak else None
+        ),
         "fix": items(weak, fix_bullet),
         "possible": items(maybe, possible_bullet),
         "possible_note": (
             "The 95% interval on the difference excludes zero by less than half a point, so "
             "printed to whole points it touches zero: a lead, not a finding."
         ),
+        "possible_note_plain": (
+            "These looked real but the margin is too thin to be sure. Treat them as leads to "
+            "watch for, not as findings."
+        ),
     }
 
 
-def summary_json(top: pd.DataFrame, player: str, s: AnalysisSettings) -> list[dict]:
+def summary_json(
+    top: pd.DataFrame,
+    player: str,
+    s: AnalysisSettings,
+    examples_for: ExamplesFor | None = None,
+) -> list[dict]:
     """Plain-language takeaways from the stable, non-tentative top insights (D29)."""
     return [
-        {"text": text, "insight": insight_record(row, player, s, None)}
+        {"text": text, "insight": insight_record(row, player, s, None, examples_for)}
         for text, row in takeaways(top, player, s)
     ]
 
@@ -223,7 +266,7 @@ def danger_json(rep: PlayerReport, s: AnalysisSettings) -> dict:
     return out
 
 
-def habits_json(h: habits.HabitSummary) -> dict:
+def habits_json(h: habits.HabitSummary, player: str) -> dict:
     tend_cols = [
         "situation",
         "reply",
@@ -282,24 +325,32 @@ def habits_json(h: habits.HabitSummary) -> dict:
         if t is None or t.empty:
             return []
         d = t[t.reliable & t.ref_reliable] if "ref_reliable" in t else t[t.reliable]
-        return records(d, [c for c in tend_cols if c in d.columns])
+        out = records(d, [c for c in tend_cols if c in d.columns])
+        for rec in out:
+            rec["plain"] = plain.habit_sentence(pd.Series(rec), player)
+        return out
 
-    def plays(t):
+    def plays(t, serving):
         if t is None or t.empty:
             return []
         d = t[t.reliable]
-        return records(d, [c for c in play_cols if c in d.columns])
+        out = records(d, [c for c in play_cols if c in d.columns])
+        for rec in out:
+            rec["plain"] = plain.set_play_sentence(pd.Series(rec), player, serving)
+        return out
 
     pred = h.predictability
+    pred_out = records(pred, [c for c in pred_cols if c in pred.columns]) if len(pred) else []
+    for rec in pred_out:
+        rec["ref_effective_replies"] = plain.effective(rec["ref_entropy_bits"])
+        rec["plain"] = plain.predictability_sentence(pd.Series(rec), player)
     return {
         "n_replies": int(h.n_replies),
         "by_shot": tend(h.tendencies_shot),
         "by_shot_zone": tend(h.tendencies_zone),
-        "predictability": records(pred, [c for c in pred_cols if c in pred.columns])
-        if len(pred)
-        else [],
+        "predictability": pred_out,
         "set_plays": {
-            f"{'serve' if serving else 'receive'}{k}": plays(h.set_plays[(k, serving)])
+            f"{'serve' if serving else 'receive'}{k}": plays(h.set_plays[(k, serving)], serving)
             for (k, serving) in h.set_plays
         },
     }
@@ -341,12 +392,31 @@ def _grid(pos: pd.DataFrame, role: str) -> dict:
     }
 
 
-def positions_json(ps: positions.PositionSummary, cfg: ZoneConfig) -> dict:
+def positions_json(ps: positions.PositionSummary, cfg: ZoneConfig, player: str) -> dict:
     b = ps.base
     rb = ps.ref_base
     handed = str(ps.positions.handed.iloc[0]) if len(ps.positions) else "right"
+
+    def means(t, kind):
+        out = records(t, [c for c in MEAN_COLS if c in t.columns])
+        for rec in out:
+            rec["plain"] = (
+                plain.mean_sentence(pd.Series(rec), player, kind)
+                if rec["mean"] is not None
+                else None
+            )
+        return out
+
+    lat_fh = float(b.base_lat_right) * (1 if handed == "right" else -1)
     return {
         "handedness": handed,
+        "plain_base": plain.base_sentence(
+            player,
+            float(b.base_depth),
+            lat_fh,
+            float(rb.base_depth.min()),
+            float(rb.base_depth.max()),
+        ),
         "frame": {
             "x": "metres from the centre line toward the player's own right",
             "y": "metres from the net into the player's own half",
@@ -373,9 +443,9 @@ def positions_json(ps: positions.PositionSummary, cfg: ZoneConfig) -> dict:
             "lat_abs_median": float(rb.base_lat_right.abs().median()),
         },
         "grids": {"hit": _grid(ps.positions, "hit"), "receive": _grid(ps.positions, "receive")},
-        "pull": records(ps.pull, [c for c in MEAN_COLS if c in ps.pull.columns]),
-        "distance": records(ps.distance, [c for c in MEAN_COLS if c in ps.distance.columns]),
-        "per_hit": records(ps.per_hit, [c for c in MEAN_COLS if c in ps.per_hit.columns]),
+        "pull": means(ps.pull, "pull"),
+        "distance": means(ps.distance, "distance"),
+        "per_hit": means(ps.per_hit, "per_hit"),
     }
 
 
@@ -400,14 +470,18 @@ XP_COLS = [
 ]
 
 
-def xp_json(px: xp.PlayerXP, res: xp.XPResult) -> dict:
+def xp_json(px: xp.PlayerXP, res: xp.XPResult, player: str) -> dict:
     auc_nonfinal = xp._auc(res, "pre", "non-final strokes")
     auc_final = xp._auc(res, "pre", "final strokes")
 
     def tab(t):
         return records(t, [c for c in XP_COLS if c in t.columns]) if len(t) else []
 
+    finishing = tab(px.finishing)
+    for rec in finishing:
+        rec["plain"] = plain.finishing_sentence(pd.Series(rec), player) if rec["reliable"] else None
     return {
+        "plain_note": plain.coin_flip_note(),
         "caveat": (
             "Read this first: xP from shot and position data has no signal mid-rally in elite "
             f"singles (holdout AUC {auc_nonfinal:.2f} on strokes that did not end the rally). The "
@@ -426,7 +500,7 @@ def xp_json(px: xp.PlayerXP, res: xp.XPResult) -> dict:
         "overall": {k: _clean(v) for k, v in px.overall.items()},
         "by_shot": tab(px.by_shot),
         "by_shot_band": tab(px.by_shot_band),
-        "finishing": tab(px.finishing),
+        "finishing": finishing,
         "situation": tab(px.situation),
     }
 
@@ -464,16 +538,44 @@ def export_player(
     res: xp.XPResult | None,
     with_stability: bool = True,
     command: str = "",
+    videos: dict[str, dict] | None = None,
 ) -> dict:
+    """videos: match_id -> live footage (footage.live_videos); None means no example rallies."""
     rep = analyse_player(df, player, s)
     stability = selection_frequency(df, player, s, k=TOP_K) if with_stability else None
     top, unstable = rank_with_stability(rep, stability)
+    ps = player_strokes(df, player)
+    videos = videos or {}
+    cache: dict[str, list[dict]] = {}
+
+    def examples_for(row: pd.Series) -> list[dict]:
+        key = f"{row.analysis}|{row.key}"
+        if key not in cache:
+            p = _parse(row, s)
+            cache[key] = footage.pick_examples(
+                ps,
+                player,
+                s,
+                "faced" if p["faced"] else "hit",
+                p["shot"],
+                p["zone"],
+                p["split"] or None,
+                float(row.delta) > 0,
+                videos,
+            )
+        return cache[key]
+
+    my_matches = set(ps.match_id.astype(str).unique())
     out = {
         "player": player,
         "slug": web_slug(player),
         "surname": surname(player),
         "generated": dt.date.today().isoformat(),
         "command": command,
+        "footage": {
+            "matches": len(my_matches),
+            "matches_with_video": len(my_matches & set(videos)),
+        },
         "settings": {
             "min_n": s.rates.min_n,
             "within": s.within,
@@ -489,15 +591,21 @@ def export_player(
         },
         "coverage": coverage_json(rep, None, pcfg),
         "insights": {
-            "top": [insight_record(r, player, s, i + 1) for i, r in top.iterrows()],
-            "less_stable": [insight_record(r, player, s, None) for _, r in unstable.iterrows()],
+            "top": [insight_record(r, player, s, i + 1, examples_for) for i, r in top.iterrows()],
+            "less_stable": [
+                insight_record(r, player, s, None, examples_for) for _, r in unstable.iterrows()
+            ],
         },
-        "summary": summary_json(top, player, s),
-        "coach": coach_json(rep, s, stability),
+        "summary": summary_json(top, player, s, examples_for),
+        "coach": coach_json(rep, s, stability, examples_for),
         "danger": danger_json(rep, s),
-        "habits": habits_json(habits.summarise(df, player, s)),
-        "positions": positions_json(positions.summarise(df, player, cfg, s), cfg),
-        "xp": xp_json(xp.player_xp(res, player, s.rates.min_n), res) if res is not None else None,
+        "habits": habits_json(habits.summarise(df, player, s), player),
+        "positions": positions_json(positions.summarise(df, player, cfg, s), cfg, player),
+        "xp": (
+            xp_json(xp.player_xp(res, player, s.rates.min_n), res, player)
+            if res is not None
+            else None
+        ),
     }
     return out
 

@@ -64,7 +64,7 @@ def test_xp_block_carries_the_caveat_and_metrics():
     df = synthetic_annotated()
     cfg = load_zone_config()
     res = xp.run_experiment(df, cfg, seed=0, holdout_ids={"syn:4"})
-    block = webexport.xp_json(xp.player_xp(res, "X", 30), res)
+    block = webexport.xp_json(xp.player_xp(res, "X", 30), res, "X")
     assert block["caveat"].startswith("Read this first")
     assert block["auc_nonfinal"] is not None and block["auc_final"] is not None
     assert block["n_rallies"] > 0 and "NaN" not in json.dumps(block)

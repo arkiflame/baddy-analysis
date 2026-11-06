@@ -1,0 +1,354 @@
+{
+ "checked": "2026-11-06T05:06:21+00:00",
+ "method": "YouTube oEmbed (https://www.youtube.com/oembed), one request per URL, no download",
+ "matches": 94,
+ "with_url": 43,
+ "distinct_urls": 43,
+ "live": 43,
+ "videos": {
+  "https://www.youtube.com/watch?v=O669aZhH0LI": {
+   "video_id": "O669aZhH0LI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | Kento MOMOTA (JPN) [1] vs. CHOU Tien Chen (TPE) [2] | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=-aOI9_JxoWc": {
+   "video_id": "-aOI9_JxoWc",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "Group B | MS | CHOU Tien Chen (TPE) vs. CHEN Long (CHN) | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=eugfCRwSBJo": {
+   "video_id": "eugfCRwSBJo",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | Kento MOMOTA (JPN) [1] vs. CHOU Tien Chen (TPE) [2] | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=y6QbtrTV-K0": {
+   "video_id": "y6QbtrTV-K0",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | CHEN Long (CHN) [5] vs. CHOU Tien Chen (TPE) [2] | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=xhUi2KpmVkI": {
+   "video_id": "xhUi2KpmVkI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | Kento MOMOTA (JPN) [1] vs CHOU Tien Chen (TPE) [4] | BWF 2018",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=SYyvDrUgClc": {
+   "video_id": "SYyvDrUgClc",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | CHOU Tien Chen (TPE) [4] vs Kento MOMOTA (JPN) [2] | BWF 2018",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=Y0tCJ6DWXKM": {
+   "video_id": "Y0tCJ6DWXKM",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "MS | CHOU Tien Chen (TPE) [6] vs Kento MOMOTA (JPN) | BWF 2018",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=32j2Tg64Zbg": {
+   "video_id": "32j2Tg64Zbg",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "SF | MS | Anders ANTONSEN (DEN) [4] vs CHOU Tien Chen (TPE) [2] | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=8E98Gpk-fOM": {
+   "video_id": "8E98Gpk-fOM",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | CHOU Tien Chien (TPE) vs Jonatan CHRISTIE (INA) | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=li1sbr6S34g": {
+   "video_id": "li1sbr6S34g",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "G1 | MS | CHOU Tien Chen (TPE) vs NG Ka Long Angus (HKG) | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=yD6WKVqsAKc": {
+   "video_id": "yD6WKVqsAKc",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | CHOU Tien Chen (TPE) [4] vs. Jonatan CHRISTIE (INA) [6] | BWF 2019",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=boQC4J4E1ZQ": {
+   "video_id": "boQC4J4E1ZQ",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | Kento MOMOTA (JPN) [1] vs. Viktor AXELSEN (DEN) [5] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=5W6txLGZ1Rs": {
+   "video_id": "5W6txLGZ1Rs",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | Jonatan CHRISTIE (INA) [6] vs. Anders ANTONSEN (DEN) [4] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=yu9oyMXRGHY": {
+   "video_id": "yu9oyMXRGHY",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "F | MS | Anthony Sinisuka GINTING (INA) [7] vs. Anders ANTONSEN (DEN) [4] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=5kS_a7vS5xI": {
+   "video_id": "5kS_a7vS5xI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "SF | MS | Viktor AXELSEN (DEN) [5] vs. Anthony Sinisuka GINTING (INA) [7] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=G9r400zkkz8": {
+   "video_id": "G9r400zkkz8",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | Jonatan CHRISTIE (INA) [6] vs. NG Ka Long Angus (HKG) | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=8lHAsyRhYYQ": {
+   "video_id": "8lHAsyRhYYQ",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | SHI Yu Qi (CHN) [7] vs. Viktor AXELSEN (DEN) [2] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=YmW83aQFADg": {
+   "video_id": "YmW83aQFADg",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "QF | MS | Viktor AXELSEN (DEN) [5] vs. CHEN Long (CHN) [4] | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=4e3JJ4rvT3Q": {
+   "video_id": "4e3JJ4rvT3Q",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "SF | MS | Viktor AXELSEN (DEN) [5] vs. NG Ka Long Angus (HKG) | BWF 2020",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=gloiZ_gTJaE": {
+   "video_id": "gloiZ_gTJaE",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: An Se Young (KOR) [7] vs. Ratchanok Intanon (THA) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=8u_UHCnYSkk": {
+   "video_id": "8u_UHCnYSkk",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: Busanan Ongbamrungphan (THA) vs. Mia Blichfeldt (DEN)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=rSK9Qx8LapE": {
+   "video_id": "rSK9Qx8LapE",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: Ng Ka Long Angus (HKG) [7] vs. Lee Cheuk Yiu (HKG)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=NlDrJyQUTSI": {
+   "video_id": "NlDrJyQUTSI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: Rasmus Gemke (DEN) vs. Anthony Sinisuka Ginting (INA) [5]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=FZPrpoGdyHI": {
+   "video_id": "FZPrpoGdyHI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: Carolina Marin (ESP) [5] vs. Supanida Katethong (THA)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=RRI_k2KZgOM": {
+   "video_id": "RRI_k2KZgOM",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 4: Viktor Axelsen (DEN) [4] vs. Jonatan Christie (INA) [6]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=HTBf9wFL0mk": {
+   "video_id": "HTBf9wFL0mk",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 5: Anthony Sinisuka Ginting (INA) [5] vs. Viktor Axelsen (DEN) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=IuXmsimDOW8": {
+   "video_id": "IuXmsimDOW8",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "YONEX Thailand Open | Day 6: Ng Ka Long Angus (HKG) [7] vs. Viktor Axelsen (DEN) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=TXT-qlniM90": {
+   "video_id": "TXT-qlniM90",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: An Se Young (KOR) [7] vs. Pornpawee Chochuwong (THA)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=YP8YlZkrQq8": {
+   "video_id": "YP8YlZkrQq8",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: Anders Antonsen (DEN) [3] vs. Sameer Verma (IND)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=gJ_KHu0EC6I": {
+   "video_id": "gJ_KHu0EC6I",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: Carolina Marin (ESP) [5] vs. Neslihan Yigit (TUR)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=ROAnTfC_8zA": {
+   "video_id": "ROAnTfC_8zA",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: Hans-Kristian Solberg Vittinghus (DEN) vs. Lee Cheuk Yu (HKG)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=OzRtd3D0hEo": {
+   "video_id": "OzRtd3D0hEo",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: Liew Daren (MAS) vs. Viktor Axelsen (DEN) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=o51ingUOU20": {
+   "video_id": "o51ingUOU20",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 4: Ratchanok Intanon (THA) [4] vs. Pusarla V. Sindhu (IND) [6]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=XmJ-OdVFQtk": {
+   "video_id": "XmJ-OdVFQtk",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 5: Carolina Marin (ESP) [5] vs. An Se Young (KOR) [7]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=D27aAZvuRTw": {
+   "video_id": "D27aAZvuRTw",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 5: Hans-Kristian Solberg Vittinghus (DEN) vs. Anders Antonsen (DEN) [3]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=4rQUHv9oGpI": {
+   "video_id": "4rQUHv9oGpI",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "TOYOTA Thailand Open | Day 6: Hans-Kristian Solberg VIittinghus (DEN) vs. Viktor Axelsen (DEN) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=OH6dnTXhZy4": {
+   "video_id": "OH6dnTXhZy4",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 3: Carolina Marin (ESP) [1] vs. An Se Young (KOR) [4]",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=XYY6YXv6Nss": {
+   "video_id": "XYY6YXv6Nss",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 3: Lee Zii Jia (MAS) vs. Anthony Sinisuka Ginting (INA)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=IDSr0z5f52k": {
+   "video_id": "IDSr0z5f52k",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 3: Michelle Li (CAN) vs. Evgeniya Kosetskaya (RUS)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=yr2JQTdzNjY": {
+   "video_id": "yr2JQTdzNjY",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 3: Ng Ka Long Angus (HKG) vs. Kidambi Srikanth (IND)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=Mawo3l3Hb9E": {
+   "video_id": "Mawo3l3Hb9E",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 3: Pornpawee Chochuwong (THA) vs. Pusarla V. Sindhu (IND)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=vfzkc3lFTdM": {
+   "video_id": "vfzkc3lFTdM",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 4: Carolina Marin (ESP) [1] vs. Pornpawee Chochuwong (THA)",
+   "author": "BWF TV"
+  },
+  "https://www.youtube.com/watch?v=j7_cjmJDYNU": {
+   "video_id": "j7_cjmJDYNU",
+   "status_code": 200,
+   "live": true,
+   "reason": "public",
+   "title": "HSBC BWF World Tour Finals | Day 5: Viktor Axelsen (DEN) vs. Anders Antonsen (DEN)",
+   "author": "BWF TV"
+  }
+ }
+}

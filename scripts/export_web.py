@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 
-from tactics import webexport, xp
+from tactics import footage, webexport, xp
 from tactics.analyses import AnalysisSettings, coverage
 from tactics.config import PROJECT_ROOT, load_player_config, load_zone_config
 from tactics.loader import load_strokes
@@ -61,11 +61,28 @@ def main(argv: list[str] | None = None) -> int:
     res = xp.run_experiment(df, cfg)
     print(f"xP fitted in {time.perf_counter() - t0:.0f} s")
 
+    # Footage: only matches whose YouTube URL scripts/check_video_urls.py found live get
+    # example rallies; without the status file every "Watch it" button stays hidden.
+    meta = footage.match_meta()
+    status = footage.load_status(PROJECT_ROOT / footage.STATUS_FILE)
+    videos = footage.live_videos(meta, status)
+    if not status:
+        print(f"no {footage.STATUS_FILE}: run scripts/check_video_urls.py to enable footage")
+    print(f"footage: {len(videos)} matches with a live URL out of {len(meta)}")
+
     index_players = []
     for i, player in enumerate(players, 1):
         t1 = time.perf_counter()
         data = webexport.export_player(
-            df, player, cfg, pcfg, s, res, with_stability=not args.no_stability, command=command
+            df,
+            player,
+            cfg,
+            pcfg,
+            s,
+            res,
+            with_stability=not args.no_stability,
+            command=command,
+            videos=videos,
         )
         webexport.write_json(out / "players" / f"{data['slug']}.json", data)
         c = data["coverage"]
@@ -128,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
         },
         "live": webexport.live_json(PROJECT_ROOT),
         "evaluation": evaluation,
+        "footage": footage.footage_summary(meta, status, videos),
         "players": index_players,
     }
     webexport.write_json(out / "index.json", index)
