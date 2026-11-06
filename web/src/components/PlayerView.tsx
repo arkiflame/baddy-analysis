@@ -2,9 +2,10 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/Badge";
-import { Court, CourtLegend, type CourtMode } from "@/components/Court";
-import { ShowNumbers } from "@/components/ShowNumbers";
-import { Tabs } from "@/components/Tabs";
+import { HowToRead } from "@/components/HowToRead";
+import { InsightCard, Numbers, PlainFlags } from "@/components/InsightCard";
+import { Reveal } from "@/components/ShowNumbers";
+import { WatchIt } from "@/components/WatchIt";
 import {
   MeanTable,
   PredictabilityTable,
@@ -13,8 +14,17 @@ import {
   TendencyTable,
   XpTable,
 } from "@/components/Tables";
-import { int, num, numCi, pct, pctCi, pts, ptsCi, shotWords } from "@/lib/format";
-import type { CoachItem, Insight, PlayerFile, RateRow, SummaryItem } from "@/lib/types";
+import { HabitArrows } from "@/components/court/HabitArrows";
+import { HeatCourt } from "@/components/court/HeatCourt";
+import { HeroCourt } from "@/components/court/HeroCourt";
+import { RallyCourt } from "@/components/court/RallyCourt";
+import { ZoneCourt, ZoneLegend } from "@/components/court/ZoneCourt";
+import { int, num, numCi, pct, pctCi, shotWords, situationWords } from "@/lib/format";
+import type { CoachItem, Insight, PlayerFile, RallyStroke, RateRow } from "@/lib/types";
+
+/* ------------------------------------------------------------------------------------ */
+/* Small pieces                                                                          */
+/* ------------------------------------------------------------------------------------ */
 
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
@@ -26,179 +36,102 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
-function keyOf(i: Insight) {
-  return `${i.analysis}|${i.key}`;
-}
-
-type Stability = Map<string, { where: "top" | "less_stable"; i: Insight }>;
-
-/** The marks a reader must not miss: always visible, text plus icon (D28). */
-function HonestyBadges({ i, stability }: { i: Insight; stability: Stability }) {
-  const s = stability.get(keyOf(i));
-  const lessStable = s?.where === "less_stable" || (!s && i.folds && !i.stable);
+function Section({
+  id,
+  title,
+  lead,
+  children,
+}: {
+  id: string;
+  title: string;
+  lead?: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <>
-      {lessStable && <Badge variant="caution">less stable</Badge>}
-      {i.tentative && <Badge variant="warn">tentative</Badge>}
-      {i.borderline && <Badge variant="warn">possible, not confident</Badge>}
-    </>
-  );
-}
-
-/** n, the difference with its interval, and the fold count: one click away (D29). */
-function NumberPills({ i, stability }: { i: Insight; stability: Stability }) {
-  const s = stability.get(keyOf(i));
-  const folds = s?.i.folds ?? i.folds;
-  const sel = s?.i.selected_folds ?? i.selected_folds;
-  return (
-    <>
-      <Badge>n={int(i.n)}</Badge>
-      <Badge>
-        {pct(i.rate)} vs {pct(i.ref_rate)} for typical pros
-      </Badge>
-      <Badge>
-        {pts(i.delta)} pts, 95% CI {ptsCi(i.delta_lo, i.delta_hi)}
-      </Badge>
-      {folds ? (
-        <Badge variant={sel !== null && sel >= folds / 2 ? "good" : "caution"}>
-          selected in {sel} of {folds} folds
-        </Badge>
-      ) : (
-        <Badge>stability not checked</Badge>
-      )}
-    </>
-  );
-}
-
-function InsightBadges({ i, stability }: { i: Insight; stability: Stability }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap gap-1">
-        <HonestyBadges i={i} stability={stability} />
-      </div>
-      <ShowNumbers>
-        <NumberPills i={i} stability={stability} />
-      </ShowNumbers>
-    </div>
-  );
-}
-
-function Summary({ items, me, stability }: { items: SummaryItem[]; me: string; stability: Stability }) {
-  return (
-    <section aria-labelledby="summary" className="rounded border border-line bg-surface p-4">
-      <h2 id="summary" className="mb-1 text-lg font-semibold">
-        Scouting summary
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-4 space-y-3">
+      <h2 id={`${id}-h`} className="text-xl font-semibold tracking-tight">
+        {title}
       </h2>
-      <p className="mb-3 text-sm text-ink-2">
-        The takeaways a coach would act on: the top insights that are stable across the
-        leave-one-match-out folds and not tentative, in plain words. The numbers behind each line
-        are one click away and in the evidence tables.
-      </p>
-      {items.length === 0 ? (
-        <p className="text-sm text-ink-2">
-          No top insight for {me} is both stable across the folds and not tentative, so there is
-          no numbers-free takeaway. Read the insights tab with its flags.
-        </p>
-      ) : (
-        <ol className="list-decimal space-y-3 pl-5">
-          {items.map((it) => (
-            <li key={keyOf(it.insight)} className="space-y-1">
-              <p>{it.text}</p>
-              <ShowNumbers>
-                <NumberPills i={it.insight} stability={stability} />
-              </ShowNumbers>
-            </li>
-          ))}
-        </ol>
-      )}
+      {lead && <p className="max-w-[70ch] text-ink-2">{lead}</p>}
+      {children}
     </section>
   );
 }
 
-function CoachList({
+const keyOf = (i: Insight) => `${i.analysis}|${i.key}`;
+
+/* ------------------------------------------------------------------------------------ */
+/* Coach lists                                                                           */
+/* ------------------------------------------------------------------------------------ */
+
+function CoachCards({
   items,
-  stability,
+  me,
   empty,
-  trailing,
+  trainingNote,
+  renderRallyFor,
 }: {
   items: CoachItem[];
-  stability: Stability;
+  me: string;
   empty: string;
-  trailing?: ReactNode;
+  trainingNote?: boolean;
+  renderRallyFor: (strokes: RallyStroke[], title: string) => ReactNode;
 }) {
-  if (!items.length && !trailing) return <p className="text-sm text-ink-2">{empty}</p>;
+  if (!items.length) return <p className="max-w-[70ch] text-ink-2">{empty}</p>;
   return (
-    <ul className="space-y-3">
-      {items.map((c) => (
-        <li key={keyOf(c.insight)} className="space-y-1">
-          <p className="font-semibold">{c.title.replace(/:$/, "")}</p>
-          <div className="flex flex-wrap gap-1">
-            <HonestyBadges i={c.insight} stability={stability} />
-          </div>
-          <ShowNumbers>
-            <span className="mb-1 w-full text-sm text-ink">{c.detail}</span>
-            <NumberPills i={c.insight} stability={stability} />
-          </ShowNumbers>
+    <ol className="space-y-3">
+      {items.map((c, n) => (
+        <li key={keyOf(c.insight)}>
+          <InsightCard
+            i={c.insight}
+            me={me}
+            number={n + 1}
+            renderRally={renderRallyFor}
+            aside={
+              trainingNote ? (
+                <p className="text-sm text-ink-2">
+                  For {me}&apos;s own training: {c.title.replace(/\.$/, "").replace(/^./, (ch) => ch.toLowerCase())}.
+                </p>
+              ) : undefined
+            }
+          />
         </li>
       ))}
-      {trailing && <li>{trailing}</li>}
-    </ul>
+    </ol>
   );
 }
 
-function ZoneCourt({ data }: { data: PlayerFile }) {
+/* ------------------------------------------------------------------------------------ */
+/* Where points are won and lost (zone court with controls)                              */
+/* ------------------------------------------------------------------------------------ */
+
+function ZoneExplorer({ data, me }: { data: PlayerFile; me: string }) {
   const [role, setRole] = useState<"faced" | "hit">("faced");
   const [shot, setShot] = useState<string>("");
   const block = data.danger.all;
-  const me = data.surname;
-  const shotRows = useMemo(
-    () => (role === "faced" ? block?.faced : block?.hit) ?? [],
-    [block, role],
-  );
+  const shotRows = useMemo(() => (role === "faced" ? block?.faced : block?.hit) ?? [], [block, role]);
   const zoneRows = (role === "faced" ? block?.faced_zone : block?.hit_zone) ?? [];
   const shots = useMemo(
     () => Array.from(new Set(shotRows.map((r) => r.shot).filter(Boolean) as string[])).sort(),
     [shotRows],
   );
   const rows: RateRow[] = shot ? shotRows.filter((r) => r.shot === shot) : zoneRows;
-  const fhRight = role === "faced" ? data.coverage.handedness === "right" : true;
+  const fhRight = data.coverage.handedness === "right";
   const base = data.positions.base;
-  const mode: CourtMode = {
-    kind: "zones",
-    rows,
-    role,
-    me,
-    within: data.settings.within,
-    minN: data.settings.min_n,
-    bodyAt:
-      role === "faced"
-        ? { x: base.lat_right, y: base.depth }
-        : { x: 0, y: data.positions.ref_base.depth_median },
-    bodyNote:
-      role === "faced"
-        ? `drawn at ${me}'s base position`
-        : "drawn at the other players' median base depth",
-  };
-  const sideLabels =
-    role === "faced"
-      ? fhRight
-        ? { left: `${me}'s backhand side`, right: `${me}'s forehand side` }
-        : { left: `${me}'s forehand side`, right: `${me}'s backhand side` }
-      : { left: "opponent's backhand side", right: "opponent's forehand side" };
   const what = shot ? shotWords(shot) : "any shot";
   const title =
     role === "faced"
-      ? `Zones on ${me}'s side: how often ${me} loses within ${data.settings.within} shots after ${what} there, vs typical pros`
-      : `Zones on the opponent's side: how often ${me} loses within ${data.settings.within} shots after playing ${what} there, vs typical pros`;
+      ? `${me}'s side of the court: where ${what} from the opponent costs ${me} the point, compared with most pros`
+      : `The opponent's side: where ${me}'s ${what} costs ${me} the point, compared with most pros`;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-4">
-        <fieldset className="flex gap-2">
-          <legend className="text-sm font-medium">Court view</legend>
+        <fieldset className="flex flex-wrap gap-3">
+          <legend className="text-sm font-medium">Show</legend>
           {(["faced", "hit"] as const).map((r) => (
             <label key={r} className="flex items-center gap-1 text-sm">
-              <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} />
-              {r === "faced" ? `shots ${me} faces` : `shots ${me} plays`}
+              <input type="radio" name="zone-role" value={r} checked={role === r} onChange={() => setRole(r)} />
+              {r === "faced" ? `shots played at ${me}` : `shots ${me} plays`}
             </label>
           ))}
         </fieldset>
@@ -221,387 +154,441 @@ function ZoneCourt({ data }: { data: PlayerFile }) {
           </select>
         </div>
       </div>
-      <p className="text-sm text-ink-2">{title}. Hover or focus a zone for n and the 95% intervals.</p>
-      <Court frame={data.positions.frame} fhOnRight={fhRight} sideLabels={sideLabels} mode={mode} title={title} />
-      <CourtLegend mode="zones" />
-      <details className="rounded border border-line bg-surface p-3">
-        <summary className="cursor-pointer text-sm font-medium">The same numbers as a table</summary>
-        <div className="pt-3">
-          <RateTable
-            rows={rows}
-            caption={title}
-            first={role === "faced" ? "zone on the player's side" : "opponent zone"}
-            outcome={`lost within ${data.settings.within}`}
-          />
-        </div>
-      </details>
+      <p className="max-w-[70ch] text-sm text-ink-2">{title}. Tap or hover an area for the words.</p>
+      <ZoneCourt
+        frame={data.positions.frame}
+        fhOnRight={role === "faced" ? fhRight : true}
+        me={me}
+        rows={rows}
+        role={role}
+        within={data.settings.within}
+        minN={data.settings.min_n}
+        bodyAt={
+          role === "faced"
+            ? { x: base.lat_right, y: base.depth }
+            : { x: 0, y: data.positions.ref_base.depth_median }
+        }
+        title={title}
+      />
+      <ZoneLegend me={me} />
+      <Reveal label="Show the tables">
+        <RateTable
+          rows={rows}
+          caption={title}
+          first={role === "faced" ? "area on the player's side" : "area on the opponent's side"}
+          outcome={`lost within ${data.settings.within}`}
+        />
+      </Reveal>
     </div>
   );
 }
 
-function HeatCourt({ data }: { data: PlayerFile }) {
-  const [role, setRole] = useState<"hit" | "receive">("hit");
+/* ------------------------------------------------------------------------------------ */
+/* The page                                                                              */
+/* ------------------------------------------------------------------------------------ */
+
+export function PlayerView({ data }: { data: PlayerFile }) {
   const me = data.surname;
+  const c = data.coverage;
+  const within = data.settings.within;
+  const fhRight = data.coverage.handedness === "right";
+  const h = data.habits;
   const p = data.positions;
-  const fhRight = p.handedness === "right";
-  const grid = p.grids[role];
-  const what = role === "hit" ? `where ${me} stands when hitting` : `where ${me} stands when the opponent hits`;
-  const title = `Position map: ${what} (${int(grid.n)} strokes, 0.25 m cells)`;
+  const x = data.xp;
+
+  const rally = (strokes: RallyStroke[], title: string) => <RallyCourt strokes={strokes} me={me} title={title} />;
+
+  // Hero: up to three takeaways drawn on the court, strongest first.
+  const heroItems = data.summary.slice(0, 3).map((s, n) => ({
+    n: n + 1,
+    role: s.insight.role,
+    zone: s.insight.zone,
+    shot: s.insight.shot,
+    kind: (s.insight.delta ?? 0) < 0 ? ("strong" as const) : ("weak" as const),
+  }));
+
+  // Habits: the situations with the most replies get a drawing; the rest are sentences.
+  const habitSituations = useMemo(() => {
+    const groups = new Map<string, { rows: typeof h.by_shot_zone; n: number }>();
+    for (const r of h.by_shot_zone) {
+      if (r.situation.endsWith("-> any")) continue;
+      const g = groups.get(r.situation) ?? { rows: [], n: r.n };
+      g.rows.push(r);
+      groups.set(r.situation, g);
+    }
+    return Array.from(groups.entries())
+      .filter(([, g]) => g.rows.length >= 2)
+      .sort((a, b) => b[1].n - a[1].n)
+      .slice(0, 2);
+  }, [h]);
+  const habitSentences = h.by_shot.filter((r) => r.habit).slice(0, 5);
+  const easyToRead = h.predictability.filter((r) => r.more_predictable).slice(0, 3);
+  const hardToRead = h.predictability.filter((r) => r.less_predictable).slice(0, 2);
+  const openings = (["serve", "receive"] as const).map((role) => ({
+    role,
+    rows: (h.set_plays[`${role}3`] ?? []).filter((r) => r.candidate).slice(0, 2),
+  }));
+
+  const pullSignals = p.pull.filter((r) => r.signal && r.plain).slice(0, 3);
+  const pullSame = p.pull.filter((r) => !r.signal && r.plain).slice(0, 2);
+  const perHit = p.per_hit.find((r) => r.label === "all rallies");
+  const finishing = x?.finishing.filter((r) => r.plain) ?? [];
+
   return (
-    <div className="space-y-3">
-      <fieldset className="flex flex-wrap gap-3">
-        <legend className="text-sm font-medium">Positions</legend>
-        {(["hit", "receive"] as const).map((r) => (
-          <label key={r} className="flex items-center gap-1 text-sm">
-            <input type="radio" name="posrole" value={r} checked={role === r} onChange={() => setRole(r)} />
-            {r === "hit" ? `when ${me} hits` : `when the opponent hits`}
-          </label>
-        ))}
-      </fieldset>
-      <Court
-        frame={p.frame}
-        fhOnRight={fhRight}
-        sideLabels={
-          fhRight
-            ? { left: `${me}'s backhand side`, right: `${me}'s forehand side` }
-            : { left: `${me}'s forehand side`, right: `${me}'s backhand side` }
+    <div className="space-y-10">
+      <header className="space-y-3">
+        <h1 className="text-3xl font-semibold tracking-tight">{data.player}</h1>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <Stat label="Matches in the data" value={int(c.matches)} />
+          <Stat label="Rallies" value={int(c.rallies)} />
+          <Stat label="Rallies won" value={pct(c.win_rate)} />
+          <Stat label="Plays" value={`${c.handedness}-handed`} note={c.handedness_known ? undefined : "assumed"} />
+          <Stat
+            label="Video available"
+            value={`${data.footage.matches_with_video} of ${data.footage.matches}`}
+            note="matches"
+          />
+        </div>
+      </header>
+
+      <HowToRead me={me} within={within} pressureFrom={data.settings.pressure_from} />
+
+      <Section
+        id="summary"
+        title="In short"
+        lead={
+          data.summary.length
+            ? `The findings that held up best, drawn on the court. Numbers on the markers match the list.`
+            : `No pattern for ${me} is both solid and well tested yet, so there is no short version. The cards below say how sure we are about each one.`
         }
-        mode={{
-          kind: "heat",
-          grid,
-          base: {
+      >
+        {data.summary.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr]">
+            <HeroCourt
+              items={heroItems}
+              me={me}
+              fhOnRight={fhRight}
+              frame={p.frame}
+              bodyAt={{ x: p.base.lat_right, y: p.base.depth }}
+              title={`${me}'s three biggest takeaways drawn on the court`}
+            />
+            <ol className="space-y-3">
+              {data.summary.slice(0, 3).map((s, n) => (
+                <li key={keyOf(s.insight)} className="space-y-1">
+                  <p>
+                    <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-semibold text-page">
+                      {n + 1}
+                    </span>
+                    <strong>{s.insight.headline}</strong>
+                  </p>
+                  <p className="max-w-[70ch] text-ink-2">{s.insight.evidence}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <WatchIt examples={s.insight.examples} me={me} renderRally={rally} />
+                    <Reveal label="Show the numbers">
+                      <Numbers i={s.insight} me={me} />
+                    </Reveal>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </Section>
+
+      <Section
+        id="beat"
+        title={`How to beat ${me}`}
+        lead={`Where ${me} loses the point more often than most pros. Each card is something an opponent can do.`}
+      >
+        <CoachCards
+          items={data.coach.fix}
+          me={me}
+          empty={`Nothing here: no situation costs ${me} the point clearly more often than it costs most pros.`}
+          trainingNote
+          renderRallyFor={rally}
+        />
+      </Section>
+
+      <Section
+        id="strengths"
+        title={`What ${me} does well`}
+        lead={`Where ${me} loses the point less often than most pros. Each card is something an opponent should not count on.`}
+      >
+        <CoachCards
+          items={data.coach.against}
+          me={me}
+          empty={`Nothing here: no situation is clearly safer for ${me} than for most pros.`}
+          renderRallyFor={rally}
+        />
+        {data.coach.possible.length > 0 && (
+          <details className="rounded border border-warn-line bg-surface p-4">
+            <summary className="cursor-pointer font-semibold">
+              Possible, not confident ({data.coach.possible.length})
+            </summary>
+            <p className="mb-3 mt-2 max-w-[70ch] text-ink-2">{data.coach.possible_note_plain}</p>
+            <CoachCards items={data.coach.possible} me={me} empty="" renderRallyFor={rally} />
+          </details>
+        )}
+      </Section>
+
+      <Section
+        id="habits"
+        title="Habits"
+        lead={`What ${me} tends to do next, compared with most pros in the same spot. Based on ${int(h.n_replies)} of ${me}'s replies.`}
+      >
+        {habitSituations.length > 0 && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {habitSituations.map(([situation, g]) => (
+              <div key={situation} className="space-y-2 rounded border border-line bg-surface p-3">
+                <h3 className="font-semibold">After {situationWords(situation, `${me}'s`)}</h3>
+                <HabitArrows
+                  situation={situation}
+                  replies={g.rows.map((r) => ({ reply: r.reply, rate: r.rate, ref_rate: r.ref_rate, n: r.n }))}
+                  me={me}
+                  fhOnRight={fhRight}
+                  frame={p.frame}
+                  title={`Where ${me} usually hits after ${situationWords(situation, `${me}'s`)}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {habitSentences.length > 0 ? (
+          <ul className="space-y-2">
+            {habitSentences.map((r) => (
+              <li key={`${r.situation}|${r.reply}`} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                {r.plain}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="max-w-[70ch] text-ink-2">No reply stands out from what most pros do.</p>
+        )}
+        {(easyToRead.length > 0 || hardToRead.length > 0) && (
+          <div className="space-y-2">
+            <h3 className="font-semibold">How predictable {me} is</h3>
+            <ul className="space-y-2">
+              {[...easyToRead, ...hardToRead].map((r) => (
+                <li key={r.situation} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                  {r.plain}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {openings.some((o) => o.rows.length) && (
+          <div className="space-y-2">
+            <h3 className="font-semibold">How {me}&apos;s rallies start</h3>
+            <ul className="space-y-2">
+              {openings.flatMap((o) =>
+                o.rows.map((r) => (
+                  <li key={`${o.role}-${r.sequence}`} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                    {r.plain}
+                  </li>
+                )),
+              )}
+            </ul>
+          </div>
+        )}
+        <Reveal label="Show the tables">
+          <h4 className="font-semibold">Habits by reply shot</h4>
+          <TendencyTable rows={h.by_shot.filter((r) => r.habit)} caption="Habits by reply shot type" limit={10} />
+          <h4 className="font-semibold">Habits by reply shot and target area</h4>
+          <TendencyTable rows={h.by_shot_zone.filter((r) => r.habit)} caption="Habits by reply shot and target zone" limit={10} />
+          <h4 className="font-semibold">Predictability (Shannon entropy of the reply, bits)</h4>
+          <PredictabilityTable rows={h.predictability.slice(0, 10)} caption="Most predictable situations" />
+          <h4 className="font-semibold">Openings</h4>
+          {(["serve", "receive"] as const).map((role) =>
+            [3, 4].map((k) => (
+              <div key={`${role}${k}`} className="space-y-1">
+                <p className="text-ink-2">First {k} strokes when {me} {role}s</p>
+                <SetPlayTable rows={h.set_plays[`${role}${k}`] ?? []} caption={`First ${k} strokes when ${me} ${role}s`} me={me} />
+              </div>
+            )),
+          )}
+        </Reveal>
+      </Section>
+
+      <Section
+        id="movement"
+        title="Movement"
+        lead={`Where ${me} stands and how far ${me} is pulled. Positions are known only at the moment a shot is hit, so every distance is a lower bound.`}
+      >
+        <p className="max-w-[70ch]">{p.plain_base}</p>
+        <HeatCourt
+          grid={p.grids.receive}
+          base={{
             x: p.base.lat_right,
             y: p.base.depth,
             xq1: p.base.lat_q1,
             xq3: p.base.lat_q3,
             yq1: p.base.depth_q1,
             yq3: p.base.depth_q3,
-          },
-          what,
-        }}
-        title={title}
-      />
-      <CourtLegend mode="heat" />
-    </div>
-  );
-}
-
-export function PlayerView({ data }: { data: PlayerFile }) {
-  const me = data.surname;
-  const c = data.coverage;
-  const stability = useMemo(() => {
-    const m = new Map<string, { where: "top" | "less_stable"; i: Insight }>();
-    for (const i of data.insights.top) m.set(keyOf(i), { where: "top", i });
-    for (const i of data.insights.less_stable) m.set(keyOf(i), { where: "less_stable", i });
-    return m;
-  }, [data]);
-  const st = data.settings.stability;
-  const within = data.settings.within;
-
-  const insightsTab = (
-    <div className="space-y-6">
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Top insights</h3>
-        <p className="text-sm text-ink-2">
-          Where {me} differs most from typical pros among patterns a coach can act on, ranked by the
-          smallest difference the data still supports (the 95% interval bound nearest zero).
-          {st.checked && st.folds
-            ? ` Only patterns selected in at least ${pct(st.min_share)} of the ${st.folds} leave-one-match-out folds are ranked; the rest are listed as less stable.`
-            : ""}{" "}
-          <em>Tentative</em> = the interval on the difference is wider than{" "}
-          {Math.round(st.tentative_ci_width * 100)} points or n is under {st.tentative_min_n}.
-        </p>
-        {data.insights.top.length === 0 && (
-          <p className="text-sm text-ink-2">No pattern passes the sample-size, interval and stability tests.</p>
-        )}
-        <ol className="space-y-3">
-          {data.insights.top.map((i) => (
-            <li key={keyOf(i)} className="rounded border border-line bg-surface p-3">
-              <p className="text-sm">
-                <span className="mr-1 font-semibold">#{i.rank}</span>
-                {i.text}
-              </p>
-              <div className="mt-1">
-                <InsightBadges i={i} stability={stability} />
-              </div>
+          }}
+          me={me}
+          fhOnRight={fhRight}
+          frame={p.frame}
+          title={`Where ${me} stands when the opponent hits (${int(p.grids.receive.n)} shots)`}
+        />
+        <ul className="space-y-2">
+          {[...pullSignals, ...pullSame].map((r) => (
+            <li key={r.label} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+              {r.plain}
             </li>
           ))}
+          {perHit?.plain && (
+            <li className="max-w-[70ch] rounded border border-line bg-surface p-3">{perHit.plain}</li>
+          )}
+        </ul>
+        <Reveal label="Show the tables">
+          <p>
+            Base position: median position when the opponent hits (n={int(p.base.n)}): {num(p.base.depth)} m from
+            the net, {num(p.base.lat_right, 2, true)} m lateral (interquartile range {num(p.base.depth_q1)}–
+            {num(p.base.depth_q3)} m deep). Other players&apos; bases: median {num(p.ref_base.depth_median)} m
+            (range {num(p.ref_base.depth_min)}–{num(p.ref_base.depth_max)} m).
+          </p>
+          <h4 className="font-semibold">Pulled from base, by the opponent&apos;s shot</h4>
+          <MeanTable rows={p.pull} caption="Pull from base by incoming shot" first="opponent's shot" unit="m" />
+          <h4 className="font-semibold">Distance per rally</h4>
+          <MeanTable rows={p.distance} caption="Distance per rally" first="rallies" unit="m" />
+          <h4 className="font-semibold">Distance per own stroke</h4>
+          <MeanTable rows={p.per_hit} caption="Distance per own stroke" first="per own hit" unit="m" />
+        </Reveal>
+      </Section>
+
+      <Section
+        id="how"
+        title="How we know"
+        lead="Four checks stand behind every card. The full story is on the Methods page."
+      >
+        <ol className="max-w-[70ch] list-decimal space-y-1 pl-5">
+          <li>
+            <strong>Count.</strong> For each kind of shot and each area of the court, we count how often {me}{" "}
+            lost the point within the next {within === 2 ? "two" : within} shots.
+          </li>
+          <li>
+            <strong>Compare.</strong> We count the same thing for every other player in the same situation.
+            A pattern only counts if {me} differs from most pros, not just from {me}&apos;s own average.
+          </li>
+          <li>
+            <strong>Doubt.</strong> Small numbers of shots can mislead, so each difference comes with a range
+            of how far off it could be. If that range includes &ldquo;no difference&rdquo;, the card is not shown
+            as a finding.
+          </li>
+          <li>
+            <strong>Re-check.</strong> We removed one of {me}&apos;s {int(c.matches)} matches at a time and
+            asked whether the pattern was still among the top five. Patterns that came and went are
+            marked as leads, not findings.
+          </li>
         </ol>
-        {data.insights.less_stable.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-semibold">Less stable</h4>
-            <p className="text-sm text-ink-2">
-              Patterns the plain ranking would have shown but that fewer than half of the leave-one-match-out folds select. Read them as candidates, not findings.
-            </p>
-            <ul className="space-y-3">
-              {data.insights.less_stable.map((i) => (
-                <li key={keyOf(i)} className="rounded border border-warn-line bg-surface p-3">
-                  <p className="text-sm">{i.text}</p>
-                  <div className="mt-1">
-                    <InsightBadges i={i} stability={stability} />
-                  </div>
-                </li>
-              ))}
-            </ul>
+        <p className="max-w-[70ch] text-ink-2">
+          <a href="/methods/" className="text-accent underline">
+            Read the Methods page
+          </a>{" "}
+          for the replication results across players and the things that did not work.
+        </p>
+
+        <h3 className="pt-2 font-semibold">Where {me} wins and loses points</h3>
+        <ZoneExplorer data={data} me={me} />
+
+        {x && (
+          <div className="space-y-2 pt-2">
+            <h3 className="font-semibold">What we could not do</h3>
+            <p className="max-w-[70ch]">{x.plain_note}</p>
+            {finishing.length > 0 && (
+              <>
+                <h3 className="font-semibold">Finishing</h3>
+                <ul className="space-y-2">
+                  {finishing.map((r) => (
+                    <li key={r.label} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                      {r.plain}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         )}
-      </section>
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Court zones</h3>
-        <ZoneCourt data={data} />
-      </section>
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">The evidence: danger tables</h3>
-        <p className="text-sm text-ink-2">
-          Probability that {me} loses the point within {within} shots after that shot, next to the
-          same probability for typical pros (all other players in the same situation) and the
-          difference in percentage points with Newcombe&apos;s 95% interval. Zones are from the
-          receiver&apos;s point of view; shots the rally ended on with an out or net error are excluded.
-          Baselines: {pct(data.danger.all?.baseline_faced ?? null, 1)} over all shots {me} faces,{" "}
-          {pct(data.danger.all?.baseline_hit ?? null, 1)} over all shots {me} plays.
-        </p>
-        <h4 className="font-semibold">Shots {me} faces</h4>
-        <RateTable rows={data.danger.all?.faced ?? []} caption={`Shots ${me} faces`} first="opponent shot → zone" outcome={`lost within ${within}`} limit={12} />
-        <h4 className="font-semibold">Shots {me} plays</h4>
-        <RateTable rows={data.danger.all?.hit ?? []} caption={`Shots ${me} plays`} first="shot → opponent zone" outcome={`lost within ${within}`} limit={12} />
-        {data.danger.game3 && (
-          <details className="rounded border border-line bg-surface p-3">
-            <summary className="cursor-pointer text-sm font-medium">Game 3 only</summary>
-            <div className="space-y-3 pt-3">
+
+        <Reveal label="Show the technical tables" className="pt-2">
+          <p className="max-w-[70ch]">
+            All comparisons: {me}&apos;s rate of losing the point within {within} shots after a shot, next to the
+            same rate for typical pros (all other players in the same situation), with Newcombe&apos;s 95% interval
+            on the difference. Minimum n = {data.settings.min_n} on both sides. Zones are from the receiver&apos;s
+            point of view; rally-ending errors (out, net) are excluded. Baselines: {pct(data.danger.all?.baseline_faced ?? null, 1)}{" "}
+            over all shots {me} faces, {pct(data.danger.all?.baseline_hit ?? null, 1)} over all shots {me} plays.
+          </p>
+          <h4 className="font-semibold">Ranked insights (the report&apos;s top-5)</h4>
+          <ol className="space-y-2">
+            {data.insights.top.map((i) => (
+              <li key={keyOf(i)} className="rounded border border-line bg-surface p-3">
+                <p>
+                  <span className="mr-1 font-semibold">#{i.rank}</span>
+                  {i.text}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {i.tentative && <Badge variant="warn">tentative</Badge>}
+                  {i.borderline && <Badge variant="warn">possible, not confident</Badge>}
+                  <Badge>n={int(i.n)}</Badge>
+                  <Badge>
+                    selected in {i.selected_folds} of {i.folds} folds
+                  </Badge>
+                </div>
+                <PlainFlags flags={i.flags} />
+              </li>
+            ))}
+          </ol>
+          {data.insights.less_stable.length > 0 && (
+            <>
+              <h4 className="font-semibold">Less stable (selected in fewer than half of the folds)</h4>
+              <ul className="space-y-2">
+                {data.insights.less_stable.map((i) => (
+                  <li key={keyOf(i)} className="rounded border border-warn-line bg-surface p-3">
+                    {i.text}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h4 className="font-semibold">Shots {me} faces</h4>
+          <RateTable rows={data.danger.all?.faced ?? []} caption={`Shots ${me} faces`} first="opponent shot → zone" outcome={`lost within ${within}`} limit={12} />
+          <h4 className="font-semibold">Shots {me} plays</h4>
+          <RateTable rows={data.danger.all?.hit ?? []} caption={`Shots ${me} plays`} first="shot → opponent zone" outcome={`lost within ${within}`} limit={12} />
+          {data.danger.game3 && (
+            <>
+              <h4 className="font-semibold">Game 3 only</h4>
               <RateTable rows={data.danger.game3.faced ?? []} caption={`Game 3, shots ${me} faces`} first="opponent shot → zone" outcome={`lost within ${within}`} limit={8} />
               <RateTable rows={data.danger.game3.hit ?? []} caption={`Game 3, shots ${me} plays`} first="shot → opponent zone" outcome={`lost within ${within}`} limit={8} />
-            </div>
-          </details>
-        )}
-        {data.danger.pressure && (
-          <details className="rounded border border-line bg-surface p-3">
-            <summary className="cursor-pointer text-sm font-medium">At {data.settings.pressure_from}+ only</summary>
-            <div className="space-y-3 pt-3">
+            </>
+          )}
+          {data.danger.pressure && (
+            <>
+              <h4 className="font-semibold">At {data.settings.pressure_from}+ only</h4>
               <RateTable rows={data.danger.pressure.faced ?? []} caption={`At ${data.settings.pressure_from}+, shots ${me} faces`} first="opponent shot → zone" outcome={`lost within ${within}`} limit={8} />
               <RateTable rows={data.danger.pressure.hit ?? []} caption={`At ${data.settings.pressure_from}+, shots ${me} plays`} first="shot → opponent zone" outcome={`lost within ${within}`} limit={8} />
-            </div>
-          </details>
-        )}
-      </section>
-    </div>
-  );
-
-  const h = data.habits;
-  const habitsTab = (
-    <div className="space-y-6">
-      <p className="text-sm text-ink-2">
-        Based on {int(h.n_replies)} of {me}&apos;s replies to a known in-play shot. A situation is the
-        opponent&apos;s shot type and the zone it landed in (from {me}&apos;s view, body included);
-        &ldquo;→ any&rdquo; pools the zones. A habit is a reply chosen significantly more often than
-        typical pros in the same situation (n ≥ {data.settings.min_n} on both sides, Newcombe 95%
-        interval on the difference of shares excludes zero).
-      </p>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Habits by reply shot type</h3>
-        <TendencyTable rows={h.by_shot.filter((r) => r.habit)} caption="Habits by reply shot type" limit={10} />
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Habits by reply shot and target zone</h3>
-        <p className="text-sm text-ink-2">Target zone from the opponent&apos;s view; replies that ended the rally with an error are excluded.</p>
-        <TendencyTable rows={h.by_shot_zone.filter((r) => r.habit)} caption="Habits by reply shot and target zone" limit={10} />
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Predictability</h3>
-        <p className="text-sm text-ink-2">
-          Shannon entropy (bits, Miller-Madow corrected, bootstrap 95% interval) of {me}&apos;s reply per
-          situation, next to typical pros&apos; entropy estimated by subsampling their replies to {me}&apos;s n
-          (mean and 2.5–97.5 percentiles over 200 draws). Effective replies = 2^entropy. Flagged when
-          the entropy falls outside the typical-pro band.
-        </p>
-        <h4 className="font-semibold">Most predictable situations</h4>
-        <PredictabilityTable rows={h.predictability.slice(0, 10)} caption="Most predictable situations" />
-        <h4 className="font-semibold">Least predictable situations</h4>
-        <PredictabilityTable rows={[...h.predictability].sort((a, b) => b.delta - a.delta).slice(0, 5)} caption="Least predictable situations" />
-      </section>
-    </div>
-  );
-
-  const setPlaysTab = (
-    <div className="space-y-6">
-      <p className="text-sm text-ink-2">
-        The first three and four strokes as shot types, ranked by how distinctive the opening is
-        versus typical pros in the same role (difference in share of rallies, 95% interval), with the
-        win rate attached. Openings seen fewer than {data.settings.min_n} times are omitted.
-      </p>
-      {(["serve", "receive"] as const).map((role) => (
-        <section key={role} className="space-y-3">
-          <h3 className="text-lg font-semibold">When {me} {role === "serve" ? "serves" : "receives"}</h3>
-          {[3, 4].map((k) => (
-            <div key={k} className="space-y-1">
-              <h4 className="font-semibold">First {k} strokes</h4>
-              <SetPlayTable rows={h.set_plays[`${role}${k}`] ?? []} caption={`First ${k} strokes when ${me} ${role}s`} me={me} />
-            </div>
-          ))}
-        </section>
-      ))}
-    </div>
-  );
-
-  const p = data.positions;
-  const side = p.base.lat_right * (p.handedness === "right" ? 1 : -1) >= 0 ? "forehand" : "backhand";
-  const positionsTab = (
-    <div className="space-y-6">
-      <p className="text-sm text-ink-2">
-        ShuttleSet records where each player stands only at the instant a stroke is hit, so these
-        are position maps, not footwork paths, and every distance is a lower bound (straight lines
-        between consecutive own-hit positions). The lateral axis is labelled with {me}&apos;s forehand
-        and backhand side ({c.handedness}-handed{c.handedness_known ? "" : ", assumed"}).
-      </p>
-      <HeatCourt data={data} />
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Base position</h3>
-        <p className="text-sm">
-          Median position when the opponent hits a non-serve stroke (n={int(p.base.n)}):{" "}
-          <strong>{num(p.base.depth)} m</strong> from the net, {num(Math.abs(p.base.lat_right))} m toward
-          the {side} side (interquartile range {num(p.base.depth_q1)}–{num(p.base.depth_q3)} m deep,{" "}
-          {num(p.base.lat_q1, 2, true)} to {num(p.base.lat_q3, 2, true)} m lateral). Typical pros: median
-          of the {p.ref_base.players} other players&apos; bases {num(p.ref_base.depth_median)} m from the net
-          (players range {num(p.ref_base.depth_min)}–{num(p.ref_base.depth_max)} m), {num(p.ref_base.lat_abs_median)} m
-          from the centre line.
-        </p>
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Pulled from base, by the opponent&apos;s shot</h3>
-        <p className="text-sm text-ink-2">Distance between {me}&apos;s base and where {me} played the reply; serves and serve returns excluded.</p>
-        <MeanTable rows={p.pull} caption="Pull from base by incoming shot" first="opponent's shot" unit="m" />
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Distance per rally</h3>
-        <p className="text-sm text-ink-2">Sum of straight lines between {me}&apos;s consecutive hit positions (a lower bound), by game and by score pressure ({data.settings.pressure_from}+).</p>
-        <MeanTable rows={p.distance} caption="Distance per rally" first="rallies" unit="m" />
-        <h4 className="font-semibold">Per own stroke (controls for rally length)</h4>
-        <MeanTable rows={p.per_hit} caption="Distance per own stroke" first="per own hit" unit="m" />
-      </section>
-    </div>
-  );
-
-  const x = data.xp;
-  const xpTab = x ? (
-    <div className="space-y-6">
-      <div className="rounded border border-warn-line bg-warn-bg p-3 text-sm text-warn-ink" role="note">
-        <strong>⚠ {x.caveat}</strong>
-      </div>
-      <p className="text-sm text-ink-2">
-        xP is P(the hitter wins the rally | the shot just played), from a model trained on {x.dev_matches}{" "}
-        development matches and checked on the {x.holdout_matches} holdout matches. Every number here
-        uses xP-pre, which sees only what is known before the shuttle lands; chosen model:{" "}
-        {x.chosen.pre}. Based on {int(x.n_shots)} of {me}&apos;s strokes in {int(x.n_rallies)} rallies.
-        Mid-rally the model&apos;s expectation is close to the base rate for every shot, so &ldquo;points
-        above expectation&rdquo; mostly measures how often the player wins rallies containing that shot;
-        &ldquo;vs own overall&rdquo; removes the player&apos;s general edge. Intervals are over rallies.
-      </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="holdout AUC, non-final strokes" value={num(x.auc_nonfinal)} note="chance = 0.50" />
-        <Stat label="holdout AUC, final strokes" value={num(x.auc_final)} note="classifying how a decisive stroke ends" />
-        <Stat label="AUC with the final zone leaked" value={num(x.leaky_auc_final, 3)} note="what a careless model reports" />
-        <Stat label={`${me}: points above expectation`} value={num(x.overall.mean, 3, true)} note={`per rally, 95% CI ${numCi(x.overall.lo, x.overall.hi, 3, true)}, n=${int(x.overall.n)}; other pros ${num(x.overall.ref_mean, 3, true)}`} />
-      </div>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Finishing</h3>
-        <p className="text-sm text-ink-2">
-          Final strokes only, one per rally: given that {me}&apos;s stroke ended the rally, how often it
-          was a winner rather than an error, minus what xP-pre expected. The one table where the model
-          has signal.
-        </p>
-        <XpTable rows={x.finishing} caption="Finishing" first="final shot" value="points above expectation" unit="strokes" />
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">By shot type</h3>
-        <XpTable rows={x.by_shot} caption="Points above expectation by shot" first="shot" value="points above expectation" unit="rallies" withOwn />
-      </section>
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">By shot and the court band it was hit from</h3>
-        <XpTable rows={x.by_shot_band} caption="Points above expectation by shot and band" first="shot, hit from" value="points above expectation" unit="rallies" withOwn limit={12} />
-      </section>
-    </div>
-  ) : (
-    <p className="text-sm text-ink-2">The export did not include the xP section for this player.</p>
-  );
-
-  return (
-    <div className="space-y-6">
-      <header className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{data.player}</h1>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          <Stat label="Matches" value={int(c.matches)} note={`${c.holdout_matches} in the holdout set`} />
-          <Stat label="Rallies" value={int(c.rallies)} note="with a known winner" />
-          <Stat label="Strokes" value={int(c.strokes)} />
-          <Stat label="Rally win rate" value={pct(c.win_rate, 1)} note={`95% CI ${pctCi(c.win_lo, c.win_hi)}`} />
-          <Stat label="Racket hand" value={c.handedness} note={c.handedness_known ? "verified source in players.toml" : "not in players.toml, assumed"} />
-        </div>
-        <p className="text-sm text-ink-2">
-          &ldquo;Typical pros&rdquo; = all other players in the dataset in the same situation; {me} is
-          never part of {me}&apos;s own reference. Minimum n = {data.settings.min_n} on both sides of
-          every comparison. Generated {data.generated}.
-        </p>
-      </header>
-
-      <Summary items={data.summary} me={me} stability={stability} />
-
-      <section aria-labelledby="coach" className="grid gap-4 md:grid-cols-2">
-        <h2 id="coach" className="sr-only">
-          Coach cards
-        </h2>
-        <div className="rounded border border-line bg-surface p-4">
-          <h3 className="mb-2 text-lg font-semibold">How to play against {me}</h3>
-          <p className="mb-3 text-sm text-ink-2">
-            For an opponent: what not to do, because {me} handles it better than typical pros with 95%
-            confidence (the interval on the difference excludes zero by at least half a point), and
-            where to attack. &ldquo;Loses within {within} shots&rdquo; means the point ended within{" "}
-            {within} strokes of that shot and {me} lost it. Each situation appears on one card only.
+            </>
+          )}
+          {x && (
+            <>
+              <h4 className="font-semibold">Expected points (xP): a negative result</h4>
+              <p>{x.caveat}</p>
+              <p>
+                Holdout AUC {num(x.auc_nonfinal)} on non-final strokes (chance 0.50), {num(x.auc_final)} on final
+                strokes, {num(x.leaky_auc_final, 3)} with the final landing zone leaked. {me}&apos;s points above
+                expectation per rally: {num(x.overall.mean, 3, true)} (95% CI {numCi(x.overall.lo, x.overall.hi, 3, true)}, n=
+                {int(x.overall.n)}); other pros {num(x.overall.ref_mean, 3, true)}.
+              </p>
+              <XpTable rows={x.finishing} caption="Finishing" first="final shot" value="points above expectation" unit="strokes" />
+              <XpTable rows={x.by_shot} caption="Points above expectation by shot" first="shot" value="points above expectation" unit="rallies" withOwn />
+            </>
+          )}
+          <p className="text-ink-2">
+            Rally win rate {pct(c.win_rate, 1)} (95% CI {pctCi(c.win_lo, c.win_hi)}); {c.holdout_matches} of{" "}
+            {c.matches} matches are in the holdout set. Generated {data.generated} by{" "}
+            <code className="text-xs">{data.command}</code>.
           </p>
-          <CoachList
-            items={data.coach.against}
-            stability={stability}
-            empty="Nothing passes the tests."
-            trailing={
-              data.coach.against_reference ? (
-                <p className="font-semibold">
-                  <a href="#fix" className="text-accent underline">
-                    {data.coach.against_reference}
-                  </a>
-                </p>
-              ) : undefined
-            }
-          />
-        </div>
-        <div id="fix" className="scroll-mt-4 rounded border border-line bg-surface p-4">
-          <h3 className="mb-2 text-lg font-semibold">What {me} should fix</h3>
-          <p className="mb-3 text-sm text-ink-2">
-            Training priorities: situations where {me} loses more often than typical pros with 95%
-            confidence.
-          </p>
-          <CoachList
-            items={data.coach.fix}
-            stability={stability}
-            empty={`No situation where ${me} loses more than typical pros passes the sample-size and interval tests.`}
-          />
-        </div>
-        {data.coach.possible.length > 0 && (
-          <details className="rounded border border-warn-line bg-surface p-4 md:col-span-2">
-            <summary className="cursor-pointer text-lg font-semibold">
-              Possible, not confident ({data.coach.possible.length})
-            </summary>
-            <p className="mb-3 mt-2 text-sm text-ink-2">{data.coach.possible_note}</p>
-            <CoachList items={data.coach.possible} stability={stability} empty="" />
-          </details>
-        )}
-      </section>
-
-      <Tabs
-        tabs={[
-          { id: "insights", label: "Insights", content: insightsTab },
-          { id: "habits", label: "Habits", content: habitsTab },
-          { id: "setplays", label: "Set plays", content: setPlaysTab },
-          { id: "positions", label: "Position maps", content: positionsTab },
-          { id: "xp", label: "xP", content: xpTab },
-        ]}
-      />
+        </Reveal>
+      </Section>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./court.css";
 
 /* Dark mode is a class on <html>, set before paint by the inline script in layout.tsx from the
    stored choice or the OS setting, so the toggle and prefers-color-scheme both work. */
@@ -82,6 +83,13 @@ html {
 
 body {
   font-family: var(--font-sans);
+  font-size: 1.0625rem; /* 17 px: readable body text on a phone and a laptop */
+  line-height: 1.6;
+}
+
+/* Body text never runs wider than about 70 characters (D30). */
+.prose-width {
+  max-width: 70ch;
 }
 
 .tabular {

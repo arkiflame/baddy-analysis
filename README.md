@@ -1,36 +1,52 @@
 # badminton-tactics
 
-Scouting reports for professional badminton singles players, built from 94 annotated matches,
-where every claim compares the player with typical pros in the same situation and carries its
-sample size and 95% interval.
+One-page scouting reports for the world's best badminton singles players: how to beat them,
+what they do well, their habits and movement, with a real-match video for each pattern.
 
 **Live demo:** <link> (placeholder; deployed from `web/`, see [Deploying to Vercel](#deploying-to-vercel))
 
-![Viktor Axelsen's player page: scouting summary, coach cards, tabs](docs/screenshot-player.png)
+![The home page: what this is, one takeaway, what did not work, and whether the findings held up](docs/screenshot-home.png)
 
-**Three headline findings** (every number comes from a command in this repo; see
-[Results](#results-all-numbers-from-commands-in-this-repo-2026-11-05)):
+## How it reads
 
-1. **Scouting.** Opponents gain little by attacking Viktor Axelsen's body: he loses the point
-   within two shots 7% of the time after a shot to his body (n=97) against 20% for typical pros
-   (difference -13 points, 95% CI -18 to -5), a pattern selected in 11 of 20 leave-one-match-out
-   folds. His one all-game weakness, pushes and rushes to his rear backhand (35% vs 23%, +11,
-   CI +2 to +23, n=81), is selected in only 1 of 20 folds and is shown as less stable.
-2. **A negative result, stated first.** Expected points from shot and position data has no
-   signal mid-rally in elite singles (holdout AUC 0.50 on strokes that did not end the rally);
-   the same features reach 0.79 only on the final stroke, which is classifying how an
-   already-decisive stroke ends. A model allowed to see the final landing zone reports 0.986,
-   which is what a careless xP model would show.
-3. **Do the insights replicate?** The top-5 insights of the 6 players with 9+ matches were
-   re-tested on matches they were not found on, under three schemes, reported together:
-   leave-one-match-out 12 replicate / 17 same direction / 1 fail / 0 untestable;
-   leave-one-opponent-out 8 / 15 / 2 / 5; holdout 1 / 8 / 6 / 15. The holdout has 1-3 matches
-   per player, which cannot resolve differences of a few points, so its strict replicates are few.
+Every card starts with what to do, in bold, then one sentence that says how often the situation
+costs the player the point and how often it costs most pros. For example, from Viktor Axelsen's
+page:
 
-**Tech stack.** Python 3.12 (pandas, numpy, scipy, scikit-learn, PyTorch for the sequence
-models), uv, pytest (78 tests), ruff; a statically exported Next.js 16 / React 19 / TypeScript /
-Tailwind v4 site in `web/` that renders precomputed JSON and computes nothing; data from
-ShuttleSet and ShuttleSet22 (CoachAI-Projects, MIT).
+> **Don't attack Axelsen's body.** When opponents hit straight at Axelsen's body, Axelsen loses
+> the point quickly about 1 time in 14. Most pros lose it about 1 time in 5.
+
+"Watch it" opens the official BWF TV broadcast on YouTube a few seconds before a rally that shows
+the pattern, with the rally's shots drawn on a court next to the video. "Show the numbers" opens
+the exact figures, each with a one-sentence explanation. Warnings such as "Early sign: not enough
+rallies to be sure" are always visible.
+
+![Viktor Axelsen's page: the three biggest takeaways drawn on the court, then "How to beat Axelsen"](docs/screenshot-player.png)
+
+![The Watch-it panel: the broadcast at the rally, and the rally's shot sequence drawn on a court](docs/screenshot-watch.png)
+
+## Three things the data says
+
+1. **Attacking Axelsen's body does not pay.** He loses the point quickly about 1 time in 14 after
+   a shot at his body; most pros lose it about 1 time in 5. This held up in 11 of 20 re-checks,
+   each leaving out a different match.
+2. **Nobody can tell who will win a rally from the middle of it.** We tried to predict the
+   winner from the shots so far and where both players stood. The model was no better than a
+   coin flip. It is reported, not hidden.
+3. **Most findings held up on matches they were not found on.** For the six players with the
+   most matches, 12 of 30 top findings held up fully when one match at a time was left out, 17
+   more pointed the same way, and 1 went the other way.
+
+Every number above comes from a command in this repository (see
+[Results](#results-all-numbers-from-commands-in-this-repo-2026-11-05) and
+[docs/EVALUATION.md](docs/EVALUATION.md)); the site itself computes nothing.
+
+## Built with
+
+Python 3.12 (pandas, numpy, scipy, scikit-learn, PyTorch for the sequence models), uv, pytest,
+ruff; a statically exported Next.js 16 / React 19 / TypeScript / Tailwind v4 site in `web/` that
+renders precomputed JSON; data from ShuttleSet and ShuttleSet22 (CoachAI-Projects, MIT); videos
+are BWF TV broadcasts on YouTube, linked and never copied.
 
 ---
 

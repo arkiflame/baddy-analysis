@@ -11,6 +11,14 @@ npm run build    # static site in out/
 npm run lint
 ```
 
-Layout: `src/app` (pages: `/`, `/players/[slug]/`, `/methods/`), `src/components` (Court, PlayerView,
-Tables, Tabs, ThemeToggle, PlayerSearch, Badge, ShowNumbers), `src/lib` (types mirroring the JSON,
-build-time readers, number formatting).
+Layout: `src/app` (pages: `/`, `/players/[slug]/`, `/methods/`), `src/components` (PlayerView,
+InsightCard, WatchIt, HowToRead, Tables, ThemeToggle, PlayerSearch, Badge, ShowNumbers with the
+`Reveal` disclosure, and `court/` for the SVG courts: ZoneCourt, RallyCourt, HabitArrows,
+HeroCourt, HeatCourt), `src/lib` (types mirroring the JSON, build-time readers, number and
+plain-language formatting).
+
+Plain language (D30): the main text of every page is written for a reader with no statistics.
+The exact figures sit inside `Reveal` disclosures, which carry a `data-technical` attribute;
+`uv run python scripts/jargon_check.py` (after `npm run build`) parses `out/` and lists any
+banned term that is still in the main text. Footage is embedded from youtube-nocookie.com only
+after the reader presses "Watch it"; nothing loads from YouTube before that.

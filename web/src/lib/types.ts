@@ -21,9 +21,44 @@ export interface RateRow {
   signal?: boolean;
 }
 
+/** One stroke of an example rally, in a full-court frame: x across the court (0..6.10 m),
+ *  y along it (0..13.40 m, net at 6.70), oriented so the player's own half is y > 6.70. */
+export interface RallyStroke {
+  no: number;
+  by: "me" | "opp";
+  shot: string;
+  from: [number, number] | null; // contact point (serves: the hitter's feet)
+  to: [number, number] | null; // landing point
+  zone: string | null;
+  highlight: boolean; // the stroke the insight is about
+}
+
+/** An example rally with live footage (D30). Links only; nothing is stored. */
+export interface Example {
+  match_id: string;
+  label: string; // "vs Momota, Malaysia Masters 2020, Finals"
+  date: string | null;
+  game: number;
+  rally_no: number | null;
+  stroke_no: number;
+  at_s: number; // the pattern stroke's time in the broadcast
+  start_s: number; // a few seconds earlier
+  outcome: "won" | "lost";
+  ends_in: number; // strokes from the pattern stroke to the end of the rally
+  video_id: string;
+  watch: string; // youtube.com link at start_s
+  embed: string; // youtube-nocookie.com embed at start_s
+  strokes: RallyStroke[];
+}
+
 export interface Insight extends RateRow {
   rank: number | null;
   text: string;
+  headline: string; // the coaching takeaway, bold on the page (D30)
+  evidence: string; // one plain sentence of evidence, "1 in N" style
+  held_up: string | null; // the re-check sentence, if stability was checked
+  flags: string[]; // plain-language warnings, always visible
+  examples: Example[];
   analysis: string;
   key: string;
   role: "faced" | "hit";
@@ -73,6 +108,7 @@ export interface TendencyRow {
   reliable: boolean;
   ref_reliable: boolean;
   habit: boolean;
+  plain: string;
 }
 
 export interface PredictabilityRow {
@@ -90,6 +126,8 @@ export interface PredictabilityRow {
   less_predictable: boolean;
   top_reply: string;
   top_share: number;
+  ref_effective_replies: number;
+  plain: string;
 }
 
 export interface SetPlayRow {
@@ -111,6 +149,7 @@ export interface SetPlayRow {
   reliable: boolean;
   ref_reliable: boolean;
   candidate: boolean;
+  plain: string;
 }
 
 export interface MeanRow {
@@ -128,6 +167,7 @@ export interface MeanRow {
   delta_hi: number | null;
   reliable: boolean;
   signal: boolean;
+  plain?: string | null;
 }
 
 export interface XpRow extends MeanRow {
@@ -154,6 +194,7 @@ export interface PlayerFile {
   surname: string;
   generated: string;
   command: string;
+  footage: { matches: number; matches_with_video: number };
   settings: {
     min_n: number;
     within: number;
@@ -184,9 +225,11 @@ export interface PlayerFile {
   coach: {
     against: CoachItem[]; // strengths: what an opponent should not do
     against_reference: string | null; // the one line that stands in for the weaknesses
+    against_reference_plain: string | null;
     fix: CoachItem[]; // weaknesses as training priorities
     possible: CoachItem[]; // borderline candidates
     possible_note: string;
+    possible_note_plain: string;
   };
   danger: Record<"all" | "game3" | "pressure", DangerBlock | undefined>;
   habits: {
@@ -198,6 +241,7 @@ export interface PlayerFile {
   };
   positions: {
     handedness: "left" | "right";
+    plain_base: string;
     frame: {
       singles_half_width_m: number;
       half_length_m: number;
@@ -228,6 +272,7 @@ export interface PlayerFile {
   };
   xp: {
     caveat: string;
+    plain_note: string;
     auc_nonfinal: number | null;
     auc_final: number | null;
     leaky_auc_final: number | null;
@@ -319,6 +364,13 @@ export interface IndexFile {
     pass_auc: number | null;
     command: string | null;
   }[];
+  footage: {
+    matches: number;
+    with_url: number;
+    live: number;
+    checked: string | null;
+    method: string | null;
+  };
   evaluation: {
     players: string[];
     summary: EvaluationSummaryRow[];

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { IndexPlayer } from "@/lib/types";
-import { int, pct, pctCi } from "@/lib/format";
+import { int, pct } from "@/lib/format";
 
 export function PlayerSearch({ players }: { players: IndexPlayer[] }) {
   const [q, setQ] = useState("");
@@ -16,7 +16,7 @@ export function PlayerSearch({ players }: { players: IndexPlayer[] }) {
     <div className="space-y-4">
       <div className="flex max-w-md flex-col gap-1">
         <label htmlFor="player-search" className="text-sm font-medium">
-          Search players
+          Find a player
         </label>
         <input
           id="player-search"
@@ -34,8 +34,8 @@ export function PlayerSearch({ players }: { players: IndexPlayer[] }) {
       <div className="overflow-x-auto rounded border border-line bg-surface">
         <table className="tbl">
           <caption className="sr-only">
-            Players with coverage: matches, rallies, rally win rate with 95% interval, racket hand,
-            number of top insights
+            Players: matches and rallies in the data, share of rallies won, racket hand, number of
+            findings
           </caption>
           <thead>
             <tr>
@@ -47,11 +47,11 @@ export function PlayerSearch({ players }: { players: IndexPlayer[] }) {
                 Rallies
               </th>
               <th scope="col" className="num">
-                Win rate (95% CI)
+                Rallies won
               </th>
               <th scope="col">Hand</th>
               <th scope="col" className="num">
-                Top insights
+                Findings
               </th>
             </tr>
           </thead>
@@ -65,15 +65,12 @@ export function PlayerSearch({ players }: { players: IndexPlayer[] }) {
                 </th>
                 <td className="num">{int(p.matches)}</td>
                 <td className="num">{int(p.rallies)}</td>
-                <td className="num">
-                  {pct(p.win_rate, 1)}{" "}
-                  <span className="text-ink-2">({pctCi(p.win_lo, p.win_hi)})</span>
-                </td>
+                <td className="num">{pct(p.win_rate)}</td>
                 <td>{p.handedness}</td>
                 <td className="num">
                   {p.n_top}
                   {p.n_tentative > 0 && (
-                    <span className="text-ink-2"> ({p.n_tentative} tentative)</span>
+                    <span className="text-ink-2"> ({p.n_tentative} early)</span>
                   )}
                 </td>
               </tr>

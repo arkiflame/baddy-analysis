@@ -1,0 +1,30 @@
+/* Court colours (D30). The surface is a real-court green, lines are white, and the two zone
+   colours (blue = the player wins more here, red = the player loses more here) passed the
+   data-viz palette validator against both greens; white text inside a zone carries the meaning,
+   colour only reinforces it. Rally arrows: the player's shots white-ish, the opponent's yellow,
+   both with a dark outline so they read on the green. */
+:root {
+  --court-green: #2f7d4f;
+  --court-green-out: #276a43;
+  --court-white: #ffffff;
+  --net: #111111;
+  --zone-strong: #1c5cab;
+  --zone-weak: #c0392b;
+  --zone-ink: #ffffff;
+  --stroke-me: #f5f5f5;
+  --stroke-opp: #ffd166;
+  --stroke-outline: #0b0b0b;
+}
+
+.dark {
+  --court-green: #1f4d33;
+  --court-green-out: #183d28;
+  --court-white: #ffffff;
+  --net: #e8e8e8;
+  --zone-strong: #1c5cab;
+  --zone-weak: #c0392b;
+  --zone-ink: #ffffff;
+  --stroke-me: #f5f5f5;
+  --stroke-opp: #ffd166;
+  --stroke-outline: #0b0b0b;
+}

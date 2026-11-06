@@ -346,6 +346,14 @@ Polish pass (D29): the page opens with a plain-language scouting summary (stable
 insights only, numbers behind a "Show the numbers" toggle), the two coach cards never repeat a
 situation (weaknesses are training priorities, the opponent card points at them), and
 candidates whose interval bound rounds to 0 points are listed as "possible, not confident".
+Plain-language pass (D30, `src/tactics/plain.py`, `src/tactics/footage.py`): every card leads
+with a coaching headline in bold ("Don't attack Axelsen's body."), then one sentence of evidence
+in "about 1 time in 14" form; court areas are named as players name them; the statistics
+vocabulary lives only behind "Show the numbers", each term with a one-sentence explanation, and
+`scripts/jargon_check.py` proves the main text is free of it. "Watch it" embeds the BWF TV
+broadcast a few seconds before an example rally picked by `footage.pick_examples` from the same
+strokes the danger table counted (weakness: a rally lost within two shots; strength: one not
+lost quickly and won), from matches whose URL `scripts/check_video_urls.py` found live.
 
 21. *Why export JSON instead of calling the Python code from the site?*  Separation of trust: the
     numbers are produced once, by the code that is tested, and committed; the UI is a renderer
@@ -374,3 +382,13 @@ candidates whose interval bound rounds to 0 points are listed as "possible, not 
     not confident") stay visible, since a reader must not need a click to learn that a claim is
     weak. The sentences themselves are generated only from insights that are stable and not
     tentative, so a numbers-free line is never a weaker claim in disguise.
+25. *Why does the site say "Axelsen" everywhere instead of "he"?*  The dataset records names,
+    not how players want to be referred to, and the players are men and women from several
+    countries. A repeated surname costs a little rhythm; a wrong pronoun costs trust. The
+    sentences are generated, so the rule is enforced in one place (`plain.py`).
+26. *How do you pick the rally to show for an insight without cherry-picking?*  The candidates
+    are exactly the strokes the statistic counted (same filters as the danger table), the outcome
+    must show the claim (lost within two shots for a weakness; not lost quickly and won for a
+    strength), and the order is deterministic: shortest wait to the outcome first, one rally per
+    match before a second from the same match, at most three. The viewer sees a true instance,
+    not a flattering one, and the rate next to it says how typical it is.

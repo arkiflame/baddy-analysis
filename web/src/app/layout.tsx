@@ -7,9 +7,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const metadata: Metadata = {
   title: { default: "Badminton scouting reports", template: "%s · Badminton scouting" },
   description:
-    "Scouting reports for professional singles players built from ShuttleSet stroke data: " +
-    "how to play against a player, what they should fix, habits, position maps, and the " +
-    "evidence behind every claim.",
+    "One-page scouting reports for professional badminton singles players: how to beat them, " +
+    "what they do well, their habits and movement, with a real-match video for each pattern.",
 };
 
 // Runs before paint so the page never flashes the wrong theme. Stored choice wins; otherwise
@@ -42,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 Players
               </Link>
               <Link href="/methods/" className="px-2 py-2 hover:underline">
-                Methods
+                How we check
               </Link>
             </div>
             <div className="ml-auto">
@@ -55,18 +54,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </main>
         <footer className="border-t border-line bg-surface">
           <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-ink-2">
-            Data: ShuttleSet (Wang et al., KDD 2023) and ShuttleSet22 (Wang, Du, Peng, IT4PSS
-            2023), from the MIT-licensed{" "}
+            Data: the ShuttleSet and ShuttleSet22 collections (Wang and colleagues, 2023), published
+            free by the{" "}
             <a
               className="text-accent underline"
               href="https://github.com/wywyWang/CoachAI-Projects"
             >
-              CoachAI-Projects
-            </a>{" "}
-            repository. Every number on this site comes from{" "}
-            <code className="text-xs">scripts/export_web.py</code>; see{" "}
+              CoachAI research group
+            </a>
+            . Videos are BWF TV broadcasts on YouTube, linked, never copied. Every number on this site
+            was computed once, offline, and the site only shows it; see{" "}
             <Link href="/methods/" className="text-accent underline">
-              Methods
+              How we check a pattern is real
             </Link>
             .
           </div>
