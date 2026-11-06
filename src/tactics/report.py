@@ -38,6 +38,9 @@ MIN_STABLE_SHARE = (
 )
 TENTATIVE_CI_WIDTH = 0.20  # flagged 'tentative' if the interval on the difference is wider (points)
 TENTATIVE_MIN_N = 60  # ... or the player's n is smaller
+BORDERLINE_PTS = 0.005  # a candidate whose interval bound nearest zero rounds to 0 points is
+# 'possible', not 'with 95% confidence' (D29)
+SUMMARY_K = 4  # plain-language takeaways at the top of a report / player page
 
 # ---------------------------------------------------------------------------------------
 # Insight selection
@@ -68,6 +71,20 @@ def tentative(row: pd.Series) -> bool:
     """An insight whose interval on the difference is wider than TENTATIVE_CI_WIDTH or whose
     n is under TENTATIVE_MIN_N: shown, but marked (D27)."""
     return bool((row.delta_hi - row.delta_lo) > TENTATIVE_CI_WIDTH or row.n < TENTATIVE_MIN_N)
+
+
+def borderline(row: pd.Series) -> bool:
+    """A candidate whose interval on the difference excludes zero by less than half a point:
+    printed to whole points, the interval touches zero, so the claim is listed as 'possible'
+    rather than 'with 95% confidence' (D29)."""
+    return bool(min(abs(row.delta_lo), abs(row.delta_hi)) < BORDERLINE_PTS)
+
+
+def is_stable(row: pd.Series, min_share: float = MIN_STABLE_SHARE) -> bool:
+    """Selected in at least min_share of the leave-one-match-out folds. Rows without a
+    stability check (no `folds` column, or folds == 0) are never called stable."""
+    folds = int(row.get("folds", 0) or 0)
+    return bool(folds and int(row.get("selected_folds", 0) or 0) >= min_share * folds)
 
 
 def rank_with_stability(
@@ -189,6 +206,11 @@ def _situation(p: dict, me: str) -> str:
     return f"when {me} plays anything to the opponent's {zone_words(zone)}"
 
 
+def _pts(v: float) -> str:
+    """A difference in whole percentage points with its sign, never '-0'."""
+    return f"{int(round(v * 100)):+d}"
+
+
 def _numbers(row: pd.Series, s: AnalysisSettings, me: str) -> str:
     within = NUMBER_WORDS.get(s.within, str(s.within))
     txt = (
@@ -198,8 +220,8 @@ def _numbers(row: pd.Series, s: AnalysisSettings, me: str) -> str:
     if row.ref_n:
         txt += (
             f"; typical pros lose {row.ref_rate:.0%} after the same shot "
-            f"(difference {row.delta * 100:+.0f} points, 95% CI {row.delta_lo * 100:+.0f} to "
-            f"{row.delta_hi * 100:+.0f}, n={int(row.ref_n)})"
+            f"(difference {_pts(row.delta)} points, 95% CI {_pts(row.delta_lo)} to "
+            f"{_pts(row.delta_hi)}, n={int(row.ref_n)})"
         )
     return txt + "."
 
@@ -331,15 +353,21 @@ def fix_bullet(row: pd.Series, player: str, s: AnalysisSettings) -> str:
 
 def coach_rows(
     rep: PlayerReport, s: AnalysisSettings, k: int = 6, per_family: int = 2
-) -> tuple[list[pd.Series], list[pd.Series]]:
-    """The insight rows behind the two coach sections, best-supported first.
+) -> tuple[list[pd.Series], list[pd.Series], list[pd.Series]]:
+    """The insight rows behind the coach sections, best-supported first, at most k per list
+    and per_family per table (D29).
 
-    'How to play against': the player's weaknesses first (loses more than typical pros), then
-    the strengths an opponent should stop feeding, at most k lines and per_family per table.
-    'What to fix': the weaknesses only. Returns (weak, strong).
+    weak: situations where the player loses more than typical pros with 95% confidence (the
+    interval on the difference excludes zero by at least half a point). They are the training
+    priorities under 'What <player> should fix'; 'How to play against' only refers to them.
+    strong: situations where the player loses less than typical pros, same confidence; the
+    'what not to do' lines for an opponent.
+    possible: candidates whose interval bound nearest zero rounds to 0 points, either sign.
     """
     cand = rep.insights
     cand = cand[cand.candidate]
+    sure = cand[[not borderline(r) for _, r in cand.iterrows()]] if len(cand) else cand
+    maybe = cand[[borderline(r) for _, r in cand.iterrows()]] if len(cand) else cand
 
     def pick(rows: pd.DataFrame, limit: int) -> list[pd.Series]:
         out, counts = [], {}
@@ -352,19 +380,114 @@ def coach_rows(
                 break
         return out
 
-    weak = pick(cand[cand.delta > 0], k)
-    strong = pick(cand[cand.delta < 0], max(k - len(weak), k // 2))
-    return weak, strong
+    weak = pick(sure[sure.delta > 0], k)
+    strong = pick(sure[sure.delta < 0], k)
+    possible = pick(maybe, k)
+    return weak, strong, possible
+
+
+def against_reference(me: str, n_weak: int) -> str | None:
+    """The one line in 'How to play against' that stands in for the weaknesses, which are
+    listed once, under 'What <player> should fix' (D29)."""
+    if not n_weak:
+        return None
+    what = "situation" if n_weak == 1 else f"{NUMBER_WORDS.get(n_weak, n_weak)} situations"
+    return (
+        f"Attack the {what} listed under 'What {me} should fix': "
+        f"that is where {me} loses more often than typical pros."
+    )
+
+
+def possible_bullet(row: pd.Series, player: str, s: AnalysisSettings) -> str:
+    """A borderline candidate, worded as a lead rather than a finding."""
+    me = surname(player)
+    p = _parse(row, s)
+    sit = _situation(p, me)
+    head = f"{p['prefix']}{sit}" if p["prefix"] else sit[0].upper() + sit[1:]
+    more = "more" if row.delta > 0 else "less"
+    return (
+        f"**{head}:** possibly {more} costly than for typical pros ({row.rate:.0%} vs "
+        f"{row.ref_rate:.0%}, n={int(row.n)}); the 95% interval on the difference touches zero "
+        f"once rounded to whole points ({_pts(row.delta_lo)} to {_pts(row.delta_hi)})."
+    )
 
 
 def coach_sections(
     rep: PlayerReport, s: AnalysisSettings, k: int = 6, per_family: int = 2
-) -> tuple[list[str], list[str]]:
-    """Bullets for the two coach sections (see coach_rows)."""
-    weak, strong = coach_rows(rep, s, k, per_family)
-    against = [against_bullet(r, rep.player, s) for r in (weak + strong)[:k]]
+) -> tuple[list[str], list[str], list[str]]:
+    """Bullets for the coach sections (see coach_rows): (against, fix, possible). `against`
+    holds the strengths an opponent should not feed; the weaknesses live in `fix` and are
+    referred to from `against` by `against_reference`."""
+    weak, strong, maybe = coach_rows(rep, s, k, per_family)
+    against = [against_bullet(r, rep.player, s) for r in strong]
     fix = [fix_bullet(r, rep.player, s) for r in weak]
-    return against, fix
+    possible = [possible_bullet(r, rep.player, s) for r in maybe]
+    return against, fix, possible
+
+
+# ---------------------------------------------------------------------------------------
+# Scouting summary: plain-language takeaways
+# ---------------------------------------------------------------------------------------
+
+
+def takeaway(row: pd.Series, player: str, s: AnalysisSettings) -> str:
+    """One sentence in coach language, no numbers (they sit behind 'Show the numbers')."""
+    me = surname(player)
+    p = _parse(row, s)
+    shot, zone, worse = p["shot"], p["zone"], row.delta > 0
+    z = zone_words(zone) if zone else None
+    poss = f"{me}'s"
+    if p["faced"]:
+        if shot and zone:
+            what = f"{shot_words(shot)} to {poss} {z}"
+            text = (
+                f"{what} win more points than they do against typical pros"
+                if worse
+                else f"{what} win fewer points than they do against typical pros"
+            )
+        elif shot:
+            text = (
+                f"opponents' {shot_words(shot)} cost {me} more points than they cost typical pros"
+                if worse
+                else f"opponents' {shot_words(shot)} cost {me} fewer points than they cost typical pros"
+            )
+        else:
+            text = (
+                f"{poss} {z} gives up more points than typical pros' does"
+                if worse
+                else f"{poss} {z} is better covered than typical pros': attacking it wins less than usual"
+            )
+    else:
+        if shot and zone:
+            what = f"{poss} {shot_words(shot)} to the opponent's {z}"
+        elif shot:
+            what = f"{poss} {shot_words(shot)}"
+        else:
+            what = f"whatever {me} plays to the opponent's {z}"
+        text = (
+            f"{what} cost{'' if (shot or not zone) else 's'} more points than typical pros' do"
+            if worse
+            else f"{what} cost{'' if (shot or not zone) else 's'} fewer points than typical pros' do"
+        )
+        if not shot and zone:
+            text = text.replace(" do", "", 1)
+    text = p["prefix"] + text if p["prefix"] else text
+    return text[0].upper() + text[1:] + "."
+
+
+def takeaways(
+    top: pd.DataFrame, player: str, s: AnalysisSettings, k: int = SUMMARY_K
+) -> list[tuple[str, pd.Series]]:
+    """Up to k (text, row) pairs from the ranked top insights that are stable and not
+    tentative, in rank order. Rows that were never stability-checked do not qualify."""
+    out = []
+    for _, row in top.iterrows():
+        if not is_stable(row) or bool(row.get("tentative", tentative(row))):
+            continue
+        out.append((takeaway(row, player, s), row))
+        if len(out) == k:
+            break
+    return out
 
 
 # ---------------------------------------------------------------------------------------
@@ -529,7 +652,8 @@ def write_report(
     r, ps = rep.rallies, rep.strokes
     me = surname(rep.player)
     top, unstable = rank_with_stability(rep, stability)
-    against, fix = coach_sections(rep, s)
+    against, fix, possible = coach_sections(rep, s)
+    summary = takeaways(top, rep.player, s)
     n_hold = int(r[is_holdout(r.match_id)].match_id.nunique())
     base_lo, base_hi = _ci(int(r.player_won.sum()), len(r))
     within = NUMBER_WORDS.get(s.within, str(s.within))
@@ -557,6 +681,22 @@ def write_report(
         f"(receiving the same shot to the same zone, or playing it); {me} is never part of "
         f"{me}'s own reference.\n"
     )
+
+    L.append("## Scouting summary\n")
+    if summary:
+        L.append(
+            "The takeaways a coach would act on: the top insights that are stable across "
+            "the leave-one-match-out folds and not tentative, without numbers. The numbers "
+            "are in the table below and in the evidence tables.\n"
+        )
+        L.extend(f"- {text}" for text, _ in summary)
+    else:
+        L.append(
+            "_No top insight is both stable across the leave-one-match-out folds and not "
+            "tentative, so there is no numbers-free takeaway. Read the table below with its "
+            "flags._"
+        )
+    L.append("")
 
     L.append("## Top insights\n")
     stability_note = ""
@@ -590,14 +730,25 @@ def write_report(
 
     L.append(f"## How to play against {me}\n")
     L.append(
-        f"For an opponent. Each line is a situation where {me}'s record differs from typical "
-        f"pros with 95% confidence; 'loses within {within} shots' means the point ended within "
-        f"{within} strokes of that shot and {me} lost it.\n"
+        f"For an opponent: what not to do, because {me} handles it better than typical pros "
+        f"with 95% confidence (the interval on the difference excludes zero by at least half "
+        f"a point), and where to attack. 'Loses within {within} shots' means the point ended "
+        f"within {within} strokes of that shot and {me} lost it. Each situation appears in "
+        f"one section only.\n"
     )
-    L.extend(f"- {b}" for b in against) if against else L.append("_Nothing passes the tests._")
+    ref = against_reference(me, len(fix))
+    if against or ref:
+        L.extend(f"- {b}" for b in against)
+        if ref:
+            L.append(f"- **{ref}**")
+    else:
+        L.append("_Nothing passes the tests._")
     L.append("")
     L.append(f"## What {me} should fix\n")
-    L.append(f"Situations where {me} loses more often than typical pros.\n")
+    L.append(
+        f"Training priorities: situations where {me} loses more often than typical pros with "
+        f"95% confidence.\n"
+    )
     if fix:
         L.extend(f"- {b}" for b in fix)
     else:
@@ -605,6 +756,15 @@ def write_report(
             f"_No situation where {me} loses more than typical pros passes the sample-size and "
             "interval tests._"
         )
+    if possible:
+        L.append("")
+        L.append("### Possible, not confident\n")
+        L.append(
+            "Candidates whose 95% interval on the difference excludes zero by less than half "
+            "a point: printed to whole points it touches zero, so they are leads, not "
+            "findings.\n"
+        )
+        L.extend(f"- {b}" for b in possible)
     L.append("")
 
     L.append("## The evidence: danger tables\n")

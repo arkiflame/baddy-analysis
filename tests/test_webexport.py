@@ -30,11 +30,21 @@ def test_player_export_matches_the_report(tmp_path):
     assert first["folds"] == 2 and first["selected_folds"] == 2 and first["stable"]
     assert first["n"] == int(row.n) and first["delta"] == float(row.delta)
     assert first["rank"] == int(top.index[top.key == key][0]) + 1
-    # coach bullets split into title / detail and carry their insight
-    against, fix = coach_sections(rep, s)
-    assert len(data["coach"]["against"]) == len(against)
-    assert data["coach"]["against"][0]["title"].rstrip(".") in against[0]
-    assert data["coach"]["fix"][0]["insight"]["delta"] > 0
+    # coach bullets split into title / detail and carry their insight (with its fold counts)
+    against, fix, possible = coach_sections(rep, s)
+    c = data["coach"]
+    assert len(c["against"]) == len(against) and len(c["fix"]) == len(fix)
+    assert len(c["possible"]) == len(possible) and c["possible_note"]
+    assert c["fix"][0]["title"].rstrip(".") in fix[0]
+    assert c["fix"][0]["insight"]["delta"] > 0 and c["fix"][0]["insight"]["folds"] == 2
+    assert c["against_reference"] and "What X should fix" in c["against_reference"]
+    fix_keys = {i["insight"]["key"] for i in c["fix"]}
+    assert not fix_keys & {i["insight"]["key"] for i in c["against"]}
+    # the scouting summary: stable, non-tentative top insights, numbers only in the record
+    for item in data["summary"]:
+        assert item["insight"]["stable"] and not item["insight"]["tentative"]
+        assert not any(ch.isdigit() for ch in item["text"])
+        assert item["insight"]["key"] in {i["key"] for i in data["insights"]["top"]}
     # danger tables: zone-alone rows exist for the court view
     assert data["danger"]["all"]["faced_zone"] and data["danger"]["all"]["hit"]
     zone_row = data["danger"]["all"]["faced_zone"][0]

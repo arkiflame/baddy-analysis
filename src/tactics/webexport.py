@@ -28,11 +28,16 @@ from tactics.report import (
     TOP_K,
     _parse,
     against_bullet,
+    against_reference,
+    borderline,
     coach_rows,
     describe,
     fix_bullet,
+    is_stable,
+    possible_bullet,
     rank_with_stability,
     surname,
+    takeaways,
     tentative,
 )
 from tactics.splits import is_holdout
@@ -114,11 +119,8 @@ def insight_record(row: pd.Series, player: str, s: AnalysisSettings, rank: int |
         "folds": _clean(row.get("folds", None)),
         "tentative": bool(row["tentative"]) if "tentative" in row.index else tentative(row),
     }
-    rec["stable"] = (
-        rec["selected_folds"] is not None
-        and rec["folds"]
-        and rec["selected_folds"] >= MIN_STABLE_SHARE * rec["folds"]
-    )
+    rec["stable"] = is_stable(row)
+    rec["borderline"] = bool(row.get("candidate", True)) and borderline(row)
     return rec
 
 
@@ -127,21 +129,56 @@ def _split_bullet(text: str) -> tuple[str, str]:
     return (m.group(1), m.group(2)) if m else (text, "")
 
 
-def coach_json(rep: PlayerReport, s: AnalysisSettings) -> dict:
-    weak, strong = coach_rows(rep, s)
-    against = []
-    for r in (weak + strong)[:6]:
-        title, detail = _split_bullet(against_bullet(r, rep.player, s))
-        against.append(
-            {"title": title, "detail": detail, "insight": insight_record(r, rep.player, s, None)}
-        )
-    fix = []
-    for r in weak:
-        title, detail = _split_bullet(fix_bullet(r, rep.player, s))
-        fix.append(
-            {"title": title, "detail": detail, "insight": insight_record(r, rep.player, s, None)}
-        )
-    return {"against": against, "fix": fix}
+def _with_stability(row: pd.Series, stability: pd.DataFrame | None) -> pd.Series:
+    """Attach selected_folds / folds from the selection-frequency table (0 if never selected)."""
+    row = row.copy()
+    if stability is None or stability.empty:
+        row["selected_folds"], row["folds"] = 0, 0
+        return row
+    hit = stability[(stability.analysis == row.analysis) & (stability.key == row.key)]
+    row["selected_folds"] = int(hit.selected_folds.iloc[0]) if len(hit) else 0
+    row["folds"] = int(stability.folds.max())
+    return row
+
+
+def coach_json(rep: PlayerReport, s: AnalysisSettings, stability: pd.DataFrame | None) -> dict:
+    """The coach cards (D29): `against` = strengths an opponent should not feed, plus
+    `against_reference` pointing at the weaknesses; `fix` = the weaknesses as training
+    priorities; `possible` = borderline candidates with the reason they are not confident."""
+    weak, strong, maybe = coach_rows(rep, s)
+
+    def items(rows, bullet):
+        out = []
+        for r in rows:
+            title, detail = _split_bullet(bullet(r, rep.player, s))
+            r = _with_stability(r, stability)
+            out.append(
+                {
+                    "title": title,
+                    "detail": detail,
+                    "insight": insight_record(r, rep.player, s, None),
+                }
+            )
+        return out
+
+    return {
+        "against": items(strong, against_bullet),
+        "against_reference": against_reference(surname(rep.player), len(weak)),
+        "fix": items(weak, fix_bullet),
+        "possible": items(maybe, possible_bullet),
+        "possible_note": (
+            "The 95% interval on the difference excludes zero by less than half a point, so "
+            "printed to whole points it touches zero: a lead, not a finding."
+        ),
+    }
+
+
+def summary_json(top: pd.DataFrame, player: str, s: AnalysisSettings) -> list[dict]:
+    """Plain-language takeaways from the stable, non-tentative top insights (D29)."""
+    return [
+        {"text": text, "insight": insight_record(row, player, s, None)}
+        for text, row in takeaways(top, player, s)
+    ]
 
 
 def _danger_rows(t: pd.DataFrame, label_col: str) -> list[dict]:
@@ -455,7 +492,8 @@ def export_player(
             "top": [insight_record(r, player, s, i + 1) for i, r in top.iterrows()],
             "less_stable": [insight_record(r, player, s, None) for _, r in unstable.iterrows()],
         },
-        "coach": coach_json(rep, s),
+        "summary": summary_json(top, player, s),
+        "coach": coach_json(rep, s, stability),
         "danger": danger_json(rep, s),
         "habits": habits_json(habits.summarise(df, player, s)),
         "positions": positions_json(positions.summarise(df, player, cfg, s), cfg),
