@@ -133,7 +133,7 @@ backhand, 35% (n=81) vs 23% for typical pros (+11, CI +2 to +23).
 
 | Feature | Verified result |
 |---|---|
-| Replication, 5 players x 5 insights (`docs/EVALUATION.md`), verdicts REPLICATES / SAME DIRECTION / FAILS / UNTESTABLE | holdout (1-3 matches per player): 1 / 8 / 6 / 10; leave-one-match-out: 8 / 16 / 1 / 0; leave-one-opponent-out: 7 / 13 / 2 / 3. The holdout's 1-3 matches cannot resolve the 4-13 point differences the insights are made of, so its 1 strict replicate and 6 fails are reported next to the two leave-one-out schemes, not instead of them |
+| Replication, 6 players (9+ matches) x 5 insights (`docs/EVALUATION.md`, `python -m tactics evaluate` on 2026-11-05), verdicts REPLICATES / SAME DIRECTION / FAILS / UNTESTABLE | holdout (0-3 matches per player): 1 / 8 / 6 / 15; leave-one-match-out: 12 / 17 / 1 / 0; leave-one-opponent-out: 8 / 15 / 2 / 5. The holdout's 0-3 matches cannot resolve the 4-13 point differences the insights are made of, so its 1 strict replicate and 6 fails are reported next to the two leave-one-out schemes, not instead of them |
 | Threshold sensitivity (`outputs/sensitivity.md`) | front/mid at 2.5 m keeps 22 of 25 top-5 insights; body radius 0.75 m keeps 16 of 25 |
 | Position maps (Axelsen) | base position 3.82 m from the net; pulled 1.22 m from base by pushes vs 1.62 m for typical pros (-0.39, CI -0.47 to -0.32); 1.58 m per own stroke vs 1.70 m |
 | Habits (Axelsen) | smashes 75% of clears to his rear backhand vs 37% for typical pros (+38, CI +31 to +44); reply entropy there 2.18 bits vs 3.11 for typical pros at the same n; opens short serve > net > lob in 32% of service rallies vs 19% |

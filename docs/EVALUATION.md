@@ -21,11 +21,14 @@ against each and reports the replication results of the current (v2) ranking.
 
 ## 2. Replication schemes (D25)
 
-Code: `src/tactics/evaluation.py`. Command used for every number below (about 7 minutes):
+Code: `src/tactics/evaluation.py`. Command used for every number below, run 2026-11-05 on the
+six players with at least 9 matches (the same set `scripts/export_web.py` evaluates for the site,
+so the Methods page totals are this run's); it took 285 s:
 
 ```
 uv run python -m tactics evaluate --player "Viktor AXELSEN" --player "An Se Young" \
-    --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --out outputs/evaluation_raw.md
+    --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --player "Kento MOMOTA" \
+    --out outputs/evaluation_raw.md
 ```
 
 * **holdout**: select the top-5 on the development matches; ShuttleSet22's own validation and
@@ -51,7 +54,7 @@ Verdict per insight, always against the typical-pro reference it was selected on
 This rule is stricter than the first version's ("same sign and the two intervals overlap"), which
 is why the counts below are not comparable with the numbers reported before Phase 3.
 
-## 3. Results (run 2026-11-04, five players, 25 insights per scheme)
+## 3. Results (run 2026-11-05, six players, 30 insights per scheme)
 
 | player | matches | scheme | folds | REPLICATES | SAME DIRECTION | FAILS | UNTESTABLE |
 |---|---|---|---|---|---|---|---|
@@ -70,9 +73,12 @@ is why the counts below are not comparable with the numbers reported before Phas
 | LEE Zii Jia | 9 | holdout | 2 | 0 | 2 | 2 | 1 |
 | | | lomo | 9 | 1 | 4 | 0 | 0 |
 | | | looo | 9 | 1 | 4 | 0 | 0 |
-| **Total** | | **holdout** | | **1** | **8** | **6** | **10** |
-| | | **lomo** | | **8** | **16** | **1** | **0** |
-| | | **looo** | | **7** | **13** | **2** | **3** |
+| Kento MOMOTA | 9 | holdout | 0 | 0 | 0 | 0 | 5 |
+| | | lomo | 9 | 4 | 1 | 0 | 0 |
+| | | looo | 4 | 1 | 2 | 0 | 2 |
+| **Total** | | **holdout** | | **1** | **8** | **6** | **15** |
+| | | **lomo** | | **12** | **17** | **1** | **0** |
+| | | **looo** | | **8** | **15** | **2** | **5** |
 
 Full per-insight output with out-of-sample rates, intervals and fold counts: `outputs/evaluation_raw.md`.
 
@@ -85,27 +91,35 @@ differences the v2 insights are made of (the out-of-sample interval on such a di
 
 - **The holdout scheme is too thin for v2 insights.** The v2 ranking produces differences of
   4-13 percentage points against typical pros; on 1-3 holdout matches the out-of-sample interval
-  for such a difference is 10-20 points wide. Six of the 25 came out with the opposite sign on the
+  for such a difference is 10-20 points wide. Six of the 30 came out with the opposite sign on the
   holdout, all with intervals that include the development value (e.g. An Se Young, "anything to
-  the front forehand": 18% vs 12% in development, 7% on 59 holdout strokes). The first version's
+  the front forehand": 18% vs 12% in development, 7% on 59 holdout strokes); 15 are untestable,
+  10 of them because Chou Tien Chen and Kento Momota have no holdout match at all. The first version's
   "13 of 14 replicated" rested on a lenient rule and on coarse claims; under the strict rule the
   holdout alone cannot confirm or refute most v2 insights.
-- **Leave-one-match-out is the informative test.** Every insight is testable, 8 of 25 replicate
-  with the interval excluding zero, 16 keep the same direction, 1 fails (Chen Yufei, "defensive
-  returns to the mid backhand", 20% in development vs 7% out of sample on 14 strokes). Axelsen's
+- **Leave-one-match-out is the informative test.** Every insight is testable, 12 of 30 replicate
+  with the interval excluding zero, 17 keep the same direction, 1 fails (Chen Yufei, "game-3 lobs
+  to the rear forehand", 15% in development vs 7% out of sample on 41 strokes). Axelsen's
   three strongest claims (net shots to his front forehand 7% vs 14%, smashes to his mid forehand
   16% vs 23%, anything he plays to the opponent's mid forehand 6% vs 10%) replicate under both
-  leave-one-out schemes, and the first was selected in every fold.
+  leave-one-out schemes, and the first was selected in every fold. Kento Momota replicates 4 of 5
+  (pushes and rushes wherever they land 15% vs 23%, anything he plays to the opponent's front
+  backhand 4% vs 11%, drops at 18+ in a game 0% vs 11%, net shots to the opponent's front
+  backhand 4% vs 10%).
 - **Selection is less stable than the point estimates suggest.** Several insights are selected in
   only half of the folds (Axelsen's body-zone claim 11 of 20, his "anything to the opponent's mid
   forehand" 10 of 20). The report's top-5 should be read as "five of the roughly ten patterns that
   the data supports", not as a fixed ranking.
-- **Leave-one-opponent-out agrees with leave-one-match-out** (7 replicate, 13 same direction, 2
-  fail), so no evaluated insight is one opponent's style in disguise; the two failures (An Se
-  Young's "pushes to the mid forehand", Chen Yufei's game-3 lob claim) are small-n claims that
-  also look weak under the other schemes.
-- **Game-3 and 18+ claims are the least reliable family**: small n by construction, and three of
-  the four insights that fail under some scheme are split claims.
+- **Leave-one-opponent-out agrees with leave-one-match-out** (8 replicate, 15 same direction, 2
+  fail, 5 untestable), so no evaluated insight is one opponent's style in disguise; the two
+  failures (An Se Young's "pushes to the mid forehand", Chen Yufei's game-3 lob claim) are small-n
+  claims that also look weak under the other schemes. The 5 untestable insights belong to the
+  three players with only 4-5 distinct opponents (Chou, Chen, Momota): holding one opponent out
+  removes a fifth or more of their rallies.
+- **Game-3 and 18+ claims are the least reliable family**: small n by construction. The one
+  insight that fails under both leave-one-out schemes is a game-3 claim (Chen Yufei's lobs to the
+  rear forehand), and one of the 6 holdout failures is too (Chen Yufei's game-3 smashes). Momota's
+  18+ drop claim is the exception that replicates (0% vs 11%, n=43 out of sample).
 
 ## 4. Threshold sensitivity (D26)
 
@@ -113,7 +127,8 @@ differences the v2 insights are made of (the out-of-sample interval on such a di
 uv run python scripts/threshold_sensitivity.py        # writes outputs/sensitivity.md
 ```
 
-Same five players, same selection rule, zone thresholds moved to the alternatives from D8:
+The first five players above (the script was run before Momota was added, hence 25 top-5
+insights), same selection rule, zone thresholds moved to the alternatives from D8:
 
 | variant | default top-5 | still in top-5 | dropped | new |
 |---|---|---|---|---|

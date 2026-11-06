@@ -5,6 +5,16 @@ it. This pass fixed the six review items on `features-v3` and then fast-forwarde
 No attribution trailers anywhere in the history. The Phase 3 report this replaces is in the git
 history (`git show 7383dd9:MORNING_REPORT.md`).
 
+Update 2026-11-05: the replication numbers below are from one re-run of the evaluation on the six
+players with 9+ matches (285 s), the same run `docs/EVALUATION.md`, the README and the site's
+Methods page now quote:
+
+```
+uv run python -m tactics evaluate --player "Viktor AXELSEN" --player "An Se Young" \
+    --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --player "Kento MOMOTA" \
+    --out outputs/evaluation_raw.md
+```
+
 ## What changed in this pass
 
 | Review item | What was done | Where |
@@ -39,16 +49,17 @@ The fold counts are the same ones `tactics evaluate` prints (same folds, same k)
 against Axelsen" still leads with the weaknesses: game-3 clears, pushes/rushes to his rear
 backhand (35% vs 23%, +11, CI +2 to +23, n=81), game-3 shots to his front backhand (18% vs 11%).
 
-**Replication** (`python -m tactics evaluate ...` on five players, 25 insights per scheme, strict
-verdicts against the typical-pro reference, D25; the three schemes are always quoted together):
+**Replication** (the `tactics evaluate` command above, six players with 9+ matches, 30 insights
+per scheme, strict verdicts against the typical-pro reference, D25; the three schemes are always
+quoted together):
 
 | scheme | REPLICATES | SAME DIRECTION | FAILS | UNTESTABLE |
 |---|---|---|---|---|
-| holdout (1-3 matches per player) | 1 | 8 | 6 | 10 |
-| leave-one-match-out | 8 | 16 | 1 | 0 |
-| leave-one-opponent-out | 7 | 13 | 2 | 3 |
+| holdout (0-3 matches per player) | 1 | 8 | 6 | 15 |
+| leave-one-match-out | 12 | 17 | 1 | 0 |
+| leave-one-opponent-out | 8 | 15 | 2 | 5 |
 
-The holdout's 1 strict replicate and 6 fails are real; 1-3 holdout matches cannot resolve the
+The holdout's 1 strict replicate and 6 fails are real; 0-3 holdout matches cannot resolve the
 4-13 point differences the insights are made of, which is why the two leave-one-out schemes exist
 and why none of the three is quoted alone. Axelsen: 3 replicate / 2 same direction under both
 leave-one-out schemes, 0 fail.
@@ -109,8 +120,8 @@ end of the session states the result of each command.
 
 - Built a badminton scouting tool on 94 professional matches (81,939 annotated strokes): habit and set-play tables,
   reply-entropy predictability, position maps, and a player-vs-typical-pro comparison with a confidence interval on every difference.
-- Replicated the insights out of sample under three schemes, always reported together: 8 of 25 replicate strictly under
-  leave-one-match-out (16 more keep their direction), 7 under leave-one-opponent-out, 1 on the thin 1-3-match holdout.
+- Replicated the insights out of sample under three schemes, always reported together: 12 of 30 replicate strictly under
+  leave-one-match-out (17 more keep their direction), 8 under leave-one-opponent-out, 1 on the thin 0-3-match holdout.
 - Reported two negative results instead of hiding them: expected points from shot and position data has no signal
   mid-rally in elite singles (holdout AUC 0.50), and live rally prediction scored 0.50 against a 0.60 bar set in advance.
 

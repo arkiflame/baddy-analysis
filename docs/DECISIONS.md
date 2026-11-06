@@ -241,8 +241,8 @@ report states the thresholds it used.
 * `scripts/export_web.py` writes `web/public/data/index.json` and one file per player with at
   least 3 matches, using the same functions as the Markdown report (`webexport.py` only reshapes
   tables into records). The replication schemes are run for players with at least 9 matches (six
-  players: the five of `docs/EVALUATION.md` plus Kento Momota, so the Methods page totals differ
-  from that document) and stored in `index.json` for the Methods page; the
+  players; since 2026-11-05 `docs/EVALUATION.md` reports the same six-player run, so the Methods
+  page and the document agree) and stored in `index.json` for the Methods page; the
   live-advantage verdicts are read from `outputs/m3/live_state*.json` if present, never recomputed.
 * The Next.js site (`web/`, App Router, TypeScript, Tailwind v4) is built with `output: "export"`,
   reads the JSON at build time, and contains no arithmetic beyond number formatting. Rule: the UI
@@ -287,3 +287,15 @@ report states the thresholds it used.
   performance 98 / 96 / 99. Horizontal overflow at 390 px with puppeteer-core: scrollWidth equals
   the viewport on all three pages. `docs/screenshot-player.png` is the Axelsen page at 1280 px
   from the same build with the first "Show the numbers" toggle open.
+* **One evaluation run for every document (2026-11-05).** The README headline quoted the site's
+  six-player replication while `docs/EVALUATION.md` and `MORNING_REPORT.md` still showed the
+  five-player run of 2026-11-04. The evaluation was re-run once on the six players with 9+ matches
+  (285 s) and all three documents, the WALKTHROUGH and the Methods page now quote it: holdout
+  1 / 8 / 6 / 15, leave-one-match-out 12 / 17 / 1 / 0, leave-one-opponent-out 8 / 15 / 2 / 5,
+  identical to the totals `scripts/export_web.py` had stored in `web/public/data/index.json`.
+
+  ```
+  uv run python -m tactics evaluate --player "Viktor AXELSEN" --player "An Se Young" \
+    --player "CHOU Tien Chen" --player "CHEN Yufei" --player "LEE Zii Jia" --player "Kento MOMOTA" \
+    --out outputs/evaluation_raw.md
+  ```

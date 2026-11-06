@@ -149,9 +149,9 @@ leave-one-out schemes, in how many folds the insight was selected at all.
 Why match-level: rallies of one match share players, form and annotator; a rally-level split
 leaks. Why leave-one-out as well: 1-3 holdout matches per player left zone-level claims
 untestable; leave-one-match-out tests every insight on every match while never selecting on it.
-Current counts (five players, 25 insights per scheme, REPLICATES / SAME DIRECTION / FAILS /
-UNTESTABLE): holdout 1 / 8 / 6 / 10, leave-one-match-out 8 / 16 / 1 / 0, leave-one-opponent-out
-7 / 13 / 2 / 3. The holdout's 1-3 matches per player cannot resolve 4-13 point differences, which
+Current counts (six players with 9+ matches, 30 insights per scheme, REPLICATES / SAME DIRECTION /
+FAILS / UNTESTABLE): holdout 1 / 8 / 6 / 15, leave-one-match-out 12 / 17 / 1 / 0,
+leave-one-opponent-out 8 / 15 / 2 / 5. The holdout's 0-3 matches per player cannot resolve 4-13 point differences, which
 is why its 1 strict replicate and 6 fails are always quoted next to the other two schemes.
 Details in `docs/EVALUATION.md`. The report itself uses the leave-one-match-out folds a second
 way: a top insight is ranked only if it was selected in at least half of them (D27).
@@ -208,7 +208,7 @@ Why never the final stroke's zone: it is the outcome.
    in at least half of the leave-one-match-out folds, `tentative` if the interval on the
    difference is wider than 20 points or n is under 60), and three out-of-sample replication
    schemes with explicit verdicts, always reported side by side (`docs/EVALUATION.md`: holdout
-   1 / 8 / 6 / 10, leave-one-match-out 8 / 16 / 1 / 0, leave-one-opponent-out 7 / 13 / 2 / 3).
+   1 / 8 / 6 / 15, leave-one-match-out 12 / 17 / 1 / 0, leave-one-opponent-out 8 / 15 / 2 / 5).
 3. *What is the winner's curse here and how do you handle it?*  Screening hundreds of patterns
    and keeping the extremes inflates them. Ranking by the conservative bound of the interval
    penalises small-n extremes, and leave-one-match-out re-measures each chosen insight on matches
