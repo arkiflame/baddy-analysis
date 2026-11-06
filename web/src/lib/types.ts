@@ -32,12 +32,18 @@ export interface Insight extends RateRow {
   folds: number | null;
   tentative: boolean;
   stable: boolean;
+  borderline: boolean; // interval excludes zero by less than half a point (D29)
 }
 
 export interface CoachItem {
   title: string;
   detail: string;
   insight: Insight;
+}
+
+export interface SummaryItem {
+  text: string; // one plain-language sentence, no numbers
+  insight: Insight; // the numbers behind it
 }
 
 export interface DangerBlock {
@@ -174,7 +180,14 @@ export interface PlayerFile {
     handedness_known: boolean;
   };
   insights: { top: Insight[]; less_stable: Insight[] };
-  coach: { against: CoachItem[]; fix: CoachItem[] };
+  summary: SummaryItem[];
+  coach: {
+    against: CoachItem[]; // strengths: what an opponent should not do
+    against_reference: string | null; // the one line that stands in for the weaknesses
+    fix: CoachItem[]; // weaknesses as training priorities
+    possible: CoachItem[]; // borderline candidates
+    possible_note: string;
+  };
   danger: Record<"all" | "game3" | "pressure", DangerBlock | undefined>;
   habits: {
     n_replies: number;

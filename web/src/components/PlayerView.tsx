@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/Badge";
 import { Court, CourtLegend, type CourtMode } from "@/components/Court";
+import { ShowNumbers } from "@/components/ShowNumbers";
 import { Tabs } from "@/components/Tabs";
 import {
   MeanTable,
@@ -13,7 +14,7 @@ import {
   XpTable,
 } from "@/components/Tables";
 import { int, num, numCi, pct, pctCi, pts, ptsCi, shotWords } from "@/lib/format";
-import type { CoachItem, Insight, PlayerFile, RateRow } from "@/lib/types";
+import type { CoachItem, Insight, PlayerFile, RateRow, SummaryItem } from "@/lib/types";
 
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
@@ -29,32 +30,88 @@ function keyOf(i: Insight) {
   return `${i.analysis}|${i.key}`;
 }
 
-function InsightBadges({
-  i,
-  stability,
-}: {
-  i: Insight;
-  stability: Map<string, { where: "top" | "less_stable"; i: Insight }>;
-}) {
+type Stability = Map<string, { where: "top" | "less_stable"; i: Insight }>;
+
+/** The marks a reader must not miss: always visible, text plus icon (D28). */
+function HonestyBadges({ i, stability }: { i: Insight; stability: Stability }) {
+  const s = stability.get(keyOf(i));
+  const lessStable = s?.where === "less_stable" || (!s && i.folds && !i.stable);
+  return (
+    <>
+      {lessStable && <Badge variant="caution">less stable</Badge>}
+      {i.tentative && <Badge variant="warn">tentative</Badge>}
+      {i.borderline && <Badge variant="warn">possible, not confident</Badge>}
+    </>
+  );
+}
+
+/** n, the difference with its interval, and the fold count: one click away (D29). */
+function NumberPills({ i, stability }: { i: Insight; stability: Stability }) {
   const s = stability.get(keyOf(i));
   const folds = s?.i.folds ?? i.folds;
   const sel = s?.i.selected_folds ?? i.selected_folds;
   return (
     <>
-      {s?.where === "less_stable" && (
-        <Badge variant="caution">less stable: selected in {sel} of {folds} folds</Badge>
-      )}
-      {s?.where === "top" && folds && (
-        <Badge variant="good">
-          stable in {sel} of {folds} folds
-        </Badge>
-      )}
-      {i.tentative && <Badge variant="warn">tentative</Badge>}
       <Badge>n={int(i.n)}</Badge>
+      <Badge>
+        {pct(i.rate)} vs {pct(i.ref_rate)} for typical pros
+      </Badge>
       <Badge>
         {pts(i.delta)} pts, 95% CI {ptsCi(i.delta_lo, i.delta_hi)}
       </Badge>
+      {folds ? (
+        <Badge variant={sel !== null && sel >= folds / 2 ? "good" : "caution"}>
+          selected in {sel} of {folds} folds
+        </Badge>
+      ) : (
+        <Badge>stability not checked</Badge>
+      )}
     </>
+  );
+}
+
+function InsightBadges({ i, stability }: { i: Insight; stability: Stability }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap gap-1">
+        <HonestyBadges i={i} stability={stability} />
+      </div>
+      <ShowNumbers>
+        <NumberPills i={i} stability={stability} />
+      </ShowNumbers>
+    </div>
+  );
+}
+
+function Summary({ items, me, stability }: { items: SummaryItem[]; me: string; stability: Stability }) {
+  return (
+    <section aria-labelledby="summary" className="rounded border border-line bg-surface p-4">
+      <h2 id="summary" className="mb-1 text-lg font-semibold">
+        Scouting summary
+      </h2>
+      <p className="mb-3 text-sm text-ink-2">
+        The takeaways a coach would act on: the top insights that are stable across the
+        leave-one-match-out folds and not tentative, in plain words. The numbers behind each line
+        are one click away and in the evidence tables.
+      </p>
+      {items.length === 0 ? (
+        <p className="text-sm text-ink-2">
+          No top insight for {me} is both stable across the folds and not tentative, so there is
+          no numbers-free takeaway. Read the insights tab with its flags.
+        </p>
+      ) : (
+        <ol className="list-decimal space-y-3 pl-5">
+          {items.map((it) => (
+            <li key={keyOf(it.insight)} className="space-y-1">
+              <p>{it.text}</p>
+              <ShowNumbers>
+                <NumberPills i={it.insight} stability={stability} />
+              </ShowNumbers>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 
@@ -62,24 +119,29 @@ function CoachList({
   items,
   stability,
   empty,
+  trailing,
 }: {
   items: CoachItem[];
-  stability: Map<string, { where: "top" | "less_stable"; i: Insight }>;
+  stability: Stability;
   empty: string;
+  trailing?: ReactNode;
 }) {
-  if (!items.length) return <p className="text-sm text-ink-2">{empty}</p>;
+  if (!items.length && !trailing) return <p className="text-sm text-ink-2">{empty}</p>;
   return (
     <ul className="space-y-3">
       {items.map((c) => (
         <li key={keyOf(c.insight)} className="space-y-1">
-          <div>
-            <span className="font-semibold">{c.title}</span> <span>{c.detail}</span>
-          </div>
+          <p className="font-semibold">{c.title.replace(/:$/, "")}</p>
           <div className="flex flex-wrap gap-1">
-            <InsightBadges i={c.insight} stability={stability} />
+            <HonestyBadges i={c.insight} stability={stability} />
           </div>
+          <ShowNumbers>
+            <span className="mb-1 w-full text-sm text-ink">{c.detail}</span>
+            <NumberPills i={c.insight} stability={stability} />
+          </ShowNumbers>
         </li>
       ))}
+      {trailing && <li>{trailing}</li>}
     </ul>
   );
 }
@@ -255,11 +317,13 @@ export function PlayerView({ data }: { data: PlayerFile }) {
         <ol className="space-y-3">
           {data.insights.top.map((i) => (
             <li key={keyOf(i)} className="rounded border border-line bg-surface p-3">
-              <div className="mb-1 flex flex-wrap items-center gap-1">
+              <p className="text-sm">
                 <span className="mr-1 font-semibold">#{i.rank}</span>
+                {i.text}
+              </p>
+              <div className="mt-1">
                 <InsightBadges i={i} stability={stability} />
               </div>
-              <p className="text-sm">{i.text}</p>
             </li>
           ))}
         </ol>
@@ -272,10 +336,10 @@ export function PlayerView({ data }: { data: PlayerFile }) {
             <ul className="space-y-3">
               {data.insights.less_stable.map((i) => (
                 <li key={keyOf(i)} className="rounded border border-warn-line bg-surface p-3">
-                  <div className="mb-1 flex flex-wrap items-center gap-1">
+                  <p className="text-sm">{i.text}</p>
+                  <div className="mt-1">
                     <InsightBadges i={i} stability={stability} />
                   </div>
-                  <p className="text-sm">{i.text}</p>
                 </li>
               ))}
             </ul>
@@ -477,28 +541,56 @@ export function PlayerView({ data }: { data: PlayerFile }) {
         </p>
       </header>
 
-      <section aria-labelledby="scouting" className="grid gap-4 md:grid-cols-2">
-        <h2 id="scouting" className="sr-only">
-          Scouting summary
+      <Summary items={data.summary} me={me} stability={stability} />
+
+      <section aria-labelledby="coach" className="grid gap-4 md:grid-cols-2">
+        <h2 id="coach" className="sr-only">
+          Coach cards
         </h2>
         <div className="rounded border border-line bg-surface p-4">
           <h3 className="mb-2 text-lg font-semibold">How to play against {me}</h3>
           <p className="mb-3 text-sm text-ink-2">
-            For an opponent. Each line is a situation where {me}&apos;s record differs from typical pros
-            with 95% confidence; &ldquo;loses within {within} shots&rdquo; means the point ended within{" "}
-            {within} strokes of that shot and {me} lost it.
+            For an opponent: what not to do, because {me} handles it better than typical pros with 95%
+            confidence (the interval on the difference excludes zero by at least half a point), and
+            where to attack. &ldquo;Loses within {within} shots&rdquo; means the point ended within{" "}
+            {within} strokes of that shot and {me} lost it. Each situation appears on one card only.
           </p>
-          <CoachList items={data.coach.against} stability={stability} empty="Nothing passes the tests." />
+          <CoachList
+            items={data.coach.against}
+            stability={stability}
+            empty="Nothing passes the tests."
+            trailing={
+              data.coach.against_reference ? (
+                <p className="font-semibold">
+                  <a href="#fix" className="text-accent underline">
+                    {data.coach.against_reference}
+                  </a>
+                </p>
+              ) : undefined
+            }
+          />
         </div>
-        <div className="rounded border border-line bg-surface p-4">
+        <div id="fix" className="scroll-mt-4 rounded border border-line bg-surface p-4">
           <h3 className="mb-2 text-lg font-semibold">What {me} should fix</h3>
-          <p className="mb-3 text-sm text-ink-2">Situations where {me} loses more often than typical pros.</p>
+          <p className="mb-3 text-sm text-ink-2">
+            Training priorities: situations where {me} loses more often than typical pros with 95%
+            confidence.
+          </p>
           <CoachList
             items={data.coach.fix}
             stability={stability}
             empty={`No situation where ${me} loses more than typical pros passes the sample-size and interval tests.`}
           />
         </div>
+        {data.coach.possible.length > 0 && (
+          <details className="rounded border border-warn-line bg-surface p-4 md:col-span-2">
+            <summary className="cursor-pointer text-lg font-semibold">
+              Possible, not confident ({data.coach.possible.length})
+            </summary>
+            <p className="mb-3 mt-2 text-sm text-ink-2">{data.coach.possible_note}</p>
+            <CoachList items={data.coach.possible} stability={stability} empty="" />
+          </details>
+        )}
       </section>
 
       <Tabs

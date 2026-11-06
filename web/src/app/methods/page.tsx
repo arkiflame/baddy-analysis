@@ -25,7 +25,7 @@ export default async function Methods() {
     <article className="max-w-3xl space-y-8 text-[15px] leading-relaxed">
       <h1 className="text-2xl font-semibold tracking-tight">Methods, in plain language</h1>
 
-      <section className="space-y-2">
+      <section id="data" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Where the data comes from</h2>
         <p>
           Every stroke on this site comes from <strong>ShuttleSet</strong> (Wang, Huang, Ik, Peng:
@@ -44,7 +44,7 @@ export default async function Methods() {
         </p>
       </section>
 
-      <section className="space-y-2">
+      <section id="typical-pros" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">What &ldquo;vs typical pros&rdquo; means</h2>
         <p>
           A rate on its own (&ldquo;loses 23% of points after smashes&rdquo;) is usually true of every
@@ -58,7 +58,7 @@ export default async function Methods() {
         </p>
       </section>
 
-      <section className="space-y-2">
+      <section id="intervals" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Sample sizes and intervals</h2>
         <p>
           Every rate shows its n and a 95% Wilson interval. Every difference from typical pros shows
@@ -70,7 +70,7 @@ export default async function Methods() {
         </p>
       </section>
 
-      <section className="space-y-2">
+      <section id="stability" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Stability and the &ldquo;tentative&rdquo; flag</h2>
         <p>
           Screening hundreds of patterns and keeping the extremes inflates them. Two guards: the
@@ -84,7 +84,7 @@ export default async function Methods() {
         </p>
       </section>
 
-      <section className="space-y-2">
+      <section id="replication" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Replication: do the insights hold on matches they were not found on?</h2>
         {ev ? (
           <>
@@ -162,7 +162,7 @@ export default async function Methods() {
         )}
       </section>
 
-      <section className="space-y-2">
+      <section id="negative-results" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Negative results</h2>
         <p>
           <strong>Expected points (xP).</strong> xP from shot and position data has no signal mid-rally
@@ -224,7 +224,7 @@ export default async function Methods() {
         </p>
       </section>
 
-      <section className="space-y-2">
+      <section id="reproducing" className="scroll-mt-4 space-y-2">
         <h2 className="text-lg font-semibold">Reproducing these pages</h2>
         <p>
           The JSON behind this site was written on {idx.generated} by{" "}

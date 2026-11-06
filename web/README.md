@@ -12,5 +12,5 @@ npm run lint
 ```
 
 Layout: `src/app` (pages: `/`, `/players/[slug]/`, `/methods/`), `src/components` (Court, PlayerView,
-Tables, Tabs, ThemeToggle, PlayerSearch, Badge), `src/lib` (types mirroring the JSON, build-time
-readers, number formatting).
+Tables, Tabs, ThemeToggle, PlayerSearch, Badge, ShowNumbers), `src/lib` (types mirroring the JSON,
+build-time readers, number formatting).
