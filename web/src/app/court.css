@@ -28,3 +28,46 @@
   --stroke-opp: #ffd166;
   --stroke-outline: #0b0b0b;
 }
+
+/* Court labels scale with the court's own width (a CSS container query on `.court-wrap`), so
+   they render at 12 px or more whether the court is 560 px wide on a desktop, 300 px in the
+   "In short" column or 343 px on a phone. The courts are SVGs drawn at 100 px per metre
+   (viewBox 710 wide), so a 15-unit label is 11.8 px at 560 px and would be 7 px at 343 px
+   without this. Below 480 px the long captions give way to short ones (`.court-short`). */
+.court-wrap {
+  container-type: inline-size;
+}
+.court-wrap > * {
+  --court-font-scale: 1.05;
+}
+@container (max-width: 559px) {
+  .court-wrap > * {
+    --court-font-scale: 1.25;
+  }
+}
+@container (max-width: 479px) {
+  .court-wrap > * {
+    --court-font-scale: 1.5;
+  }
+}
+@container (max-width: 399px) {
+  .court-wrap > * {
+    --court-font-scale: 1.8;
+  }
+}
+@container (max-width: 319px) {
+  .court-wrap > * {
+    --court-font-scale: 2.1;
+  }
+}
+.court-short {
+  display: none;
+}
+@container (max-width: 479px) {
+  .court-long {
+    display: none;
+  }
+  .court-short {
+    display: inline;
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { RallyCourt } from "@/components/court/RallyCourt";
+import { Button } from "@/components/ui/button";
 import type { Example, RallyStroke } from "@/lib/types";
 
 const WINDOW = 4; // shots drawn at once in the step view
@@ -21,31 +22,21 @@ export function RallyViewer({ strokes, me, title }: { strokes: RallyStroke[]; me
   return (
     <div className="space-y-2">
       <RallyCourt strokes={strokes} me={me} title={title} range={range} />
-      <div className="flex flex-wrap items-center gap-1 text-sm">
+      <div className="flex flex-wrap items-center gap-1.5 text-sm">
         <span className="mr-1 text-ink-2">{showing}</span>
         {!whole && (
           <>
-            <button
-              type="button"
-              className="rounded border border-line px-2 py-1 disabled:opacity-40"
-              onClick={() => setEnd((e) => Math.max(first, e - 1))}
-              disabled={end <= first}
-            >
+            <Button variant="outline" size="sm" onClick={() => setEnd((e) => Math.max(first, e - 1))} disabled={end <= first}>
               ◀ Prev shot
-            </button>
-            <button
-              type="button"
-              className="rounded border border-line px-2 py-1 disabled:opacity-40"
-              onClick={() => setEnd((e) => Math.min(last, e + 1))}
-              disabled={end >= last}
-            >
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setEnd((e) => Math.min(last, e + 1))} disabled={end >= last}>
               Next shot ▶
-            </button>
+            </Button>
           </>
         )}
-        <button
-          type="button"
-          className="rounded border border-line px-2 py-1"
+        <Button
+          variant="secondary"
+          size="sm"
           aria-pressed={whole}
           onClick={() => {
             setWhole((w) => !w);
@@ -53,16 +44,18 @@ export function RallyViewer({ strokes, me, title }: { strokes: RallyStroke[]; me
           }}
         >
           {whole ? `Show the last ${WINDOW} shots` : "Show whole rally"}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
 /** "Watch it": a button that opens an embedded YouTube player (youtube-nocookie.com) a few
- *  seconds before an example rally, with the rally's shot sequence drawn next to it (D30).
+ *  seconds before an example rally, with the rally's shot sequence drawn beside it (D30).
  *  Nothing loads from YouTube until the reader presses the button. The button is not rendered
- *  when an insight has no example with live footage. */
+ *  when an insight has no example with live footage. The panel takes the full width of the
+ *  card (`basis-full` inside the card's wrapping button row): video and court side by side
+ *  from 768 px up, stacked on phones. */
 export function WatchIt({ examples, me }: { examples: Example[]; me: string }) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -71,43 +64,47 @@ export function WatchIt({ examples, me }: { examples: Example[]; me: string }) {
   const ex = examples[Math.min(idx, examples.length - 1)];
   const outcome = ex.outcome === "lost" ? `${me} lost the point` : `${me} won the point`;
   return (
-    <div>
-      <button
-        type="button"
+    <>
+      <Button
+        variant={open ? "outline" : "default"}
+        size="sm"
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((v) => !v)}
-        className="rounded border border-accent bg-surface px-2.5 py-1 text-sm font-medium text-accent hover:bg-page"
       >
         {open ? "Hide the video" : `▶ Watch it${examples.length > 1 ? ` (${examples.length} rallies)` : ""}`}
-      </button>
-      <div id={id} hidden={!open} className="mt-3 space-y-3 rounded border border-line bg-page p-3">
+      </Button>
+      <div
+        id={id}
+        hidden={!open}
+        className="basis-full space-y-3 rounded-lg border border-line bg-page p-3 md:p-4"
+      >
         {open && (
           <>
-            {examples.length > 1 && (
-              <div className="flex flex-wrap gap-1" role="group" aria-label="Example rallies">
-                {examples.map((e, i) => (
-                  <button
-                    key={`${e.match_id}-${e.stroke_no}`}
-                    type="button"
-                    aria-pressed={i === idx}
-                    onClick={() => setIdx(i)}
-                    className={`rounded border px-2 py-1 text-xs ${
-                      i === idx ? "border-accent font-medium text-ink" : "border-line text-ink-2"
-                    }`}
-                  >
-                    Rally {i + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="text-sm">
-              <span className="font-medium">{ex.label}</span>, game {ex.game}
-              {ex.rally_no ? `, rally ${ex.rally_no}` : ""}. {outcome}
-              {ex.ends_in <= 2 ? " within two shots." : "."}
-            </p>
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="aspect-video w-full overflow-hidden rounded bg-black">
+            <div className="flex flex-wrap items-center gap-2">
+              {examples.length > 1 && (
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Example rallies">
+                  {examples.map((e, i) => (
+                    <Button
+                      key={`${e.match_id}-${e.stroke_no}`}
+                      variant={i === idx ? "default" : "outline"}
+                      size="xs"
+                      aria-pressed={i === idx}
+                      onClick={() => setIdx(i)}
+                    >
+                      Rally {i + 1}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              <p className="text-sm">
+                <span className="font-medium">{ex.label}</span>, game {ex.game}
+                {ex.rally_no ? `, rally ${ex.rally_no}` : ""}. {outcome}
+                {ex.ends_in <= 2 ? " within two shots." : "."}
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
                 <iframe
                   key={ex.embed}
                   src={ex.embed}
@@ -129,7 +126,7 @@ export function WatchIt({ examples, me }: { examples: Example[]; me: string }) {
             <p className="text-xs text-ink-2">
               The clip starts a few seconds before the shot. Broadcast timings can be a little
               off; if the rally has passed, scrub back a few seconds.{" "}
-              <a className="text-accent underline" href={ex.watch} target="_blank" rel="noreferrer">
+              <a className="text-link underline" href={ex.watch} target="_blank" rel="noreferrer">
                 Open on YouTube at this moment
               </a>
               . Footage is BWF TV&apos;s; nothing is stored here.
@@ -137,6 +134,6 @@ export function WatchIt({ examples, me }: { examples: Example[]; me: string }) {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }

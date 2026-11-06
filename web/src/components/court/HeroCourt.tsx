@@ -54,16 +54,16 @@ export function HeroCourt({
   const seen: Record<string, number> = {};
 
   return (
-    <figure className="mx-auto w-full max-w-[560px]">
+    <figure className="court-wrap mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none">
         <title id={`${uid}-t`}>{title}</title>
         <CourtLines view="full" />
         <SideLabels half="opponent" left={top.left} right={top.right} />
         <SideLabels half="player" left={bottom.left} right={bottom.right} />
-        <text x={px(HALF_W)} y={py(0) - 42} textAnchor="middle" fontSize="15" fill="var(--court-white)" aria-hidden="true">
+        <text className="court-long" x={px(HALF_W)} y={py(0) - 42} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)" aria-hidden="true">
           where {me}&apos;s shots land
         </text>
-        <text x={px(0)} y={py(NET) - 28} fontSize="15" fill="var(--court-white)" aria-hidden="true">
+        <text className="court-long" x={px(0)} y={py(NET) - 28} style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)" aria-hidden="true">
           {me}&apos;s half: shots {me} receives
         </text>
         {[...shown].sort((a, b) => Number(a.zone === "body") - Number(b.zone === "body")).map((it) => {
@@ -97,19 +97,19 @@ export function HeroCourt({
                 </>
               )}
               {!it.zone && (
-                <rect x={px(c.X) - 70} y={py(c.Y) - 24} width={215} height={48} rx={8} fill={fill} fillOpacity="0.9" />
+                <rect x={px(c.X) - 70} y={py(c.Y) - 24} width={235} height={48} rx={8} fill={fill} fillOpacity="0.9" />
               )}
-              <circle cx={bx} cy={py(c.Y)} r={20} fill="#ffffff" stroke="var(--stroke-outline)" strokeWidth="2" />
-              <text x={bx} y={py(c.Y) + 8} textAnchor="middle" fontSize="22" fontWeight="700" fill="#0b0b0b">
+              <circle cx={bx} cy={py(c.Y)} style={{ r: "calc(var(--court-font-scale, 1) * 20px)" }} fill="#ffffff" stroke="var(--stroke-outline)" strokeWidth="2" />
+              <text x={bx} y={py(c.Y) + 8} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 22px)" }} fontWeight="700" fill="#0b0b0b">
                 {it.n}
               </text>
               {!it.zone && (
-                <text x={px(c.X) - 18} y={py(c.Y) + 6} textAnchor="start" fontSize="15" fontWeight="600" fill="var(--zone-ink)">
+                <text x={px(c.X) - 4} y={py(c.Y) + 6} textAnchor="start" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fontWeight="600" fill="var(--zone-ink)">
                   {shotWords(it.shot ?? null)}
                 </text>
               )}
               {rect && dup === 0 && (
-                <text x={px(rect.x + rect.w / 2)} y={py(Math.min(rect.y + rect.h / 2 + 0.42, L - 1.0))} textAnchor="middle" fontSize="15" fill="var(--zone-ink)">
+                <text x={px(rect.x + rect.w / 2)} y={py(Math.min(rect.y + rect.h / 2 + 0.42, L - 1.0))} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--zone-ink)">
                   {words}
                 </text>
               )}

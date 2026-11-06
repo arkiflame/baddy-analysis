@@ -30,15 +30,15 @@ export function RallyCourt({
   const r = big ? 24 : 16;
   const font = big ? 24 : 17;
   return (
-    <figure className="mx-auto w-full max-w-[560px]">
+    <figure className="court-wrap mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none">
         <title id={`${uid}-t`}>{title}</title>
         <ArrowMarkers id={uid} />
         <CourtLines view="full" />
-        <text x={px(HALF_W)} y={py(0) - 16} textAnchor="middle" fontSize="18" fill="var(--court-white)" aria-hidden="true">
+        <text x={px(HALF_W)} y={py(0) - 16} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)" aria-hidden="true">
           opponent
         </text>
-        <text x={px(HALF_W)} y={py(L) + 34} textAnchor="middle" fontSize="18" fill="var(--court-white)" aria-hidden="true">
+        <text x={px(HALF_W)} y={py(L) + 34} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)" aria-hidden="true">
           {me}
         </text>
         {drawn.map((s) => {
@@ -63,8 +63,8 @@ export function RallyCourt({
                 strokeLinecap="round"
                 markerEnd={`url(#${uid}-${s.by})`}
               />
-              <circle cx={px(x1)} cy={py(y1)} r={r} fill={colour} stroke="var(--stroke-outline)" strokeWidth="2" />
-              <text x={px(x1)} y={py(y1) + font * 0.36} textAnchor="middle" fontSize={font} fontWeight="700" fill="#0b0b0b">
+              <circle cx={px(x1)} cy={py(y1)} style={{ r: `calc(var(--court-font-scale, 1) * ${r}px)` }} fill={colour} stroke="var(--stroke-outline)" strokeWidth="2" />
+              <text x={px(x1)} y={py(y1) + font * 0.36} textAnchor="middle" style={{ fontSize: `calc(var(--court-font-scale, 1) * ${font}px)` }} fontWeight="700" fill="#0b0b0b">
                 {s.no}
               </text>
             </g>

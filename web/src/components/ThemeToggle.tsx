@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Button } from "@/components/ui/button";
 
 // The theme lives on <html class="dark">, set before paint by layout.tsx. This component reads
 // that class as an external store (a MutationObserver keeps it in sync) and writes the user's
@@ -27,14 +28,15 @@ export function ThemeToggle() {
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="sm"
       onClick={toggle}
       aria-pressed={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="rounded border border-line bg-surface px-3 py-2 text-sm hover:bg-page"
+      className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:border-white/30 dark:bg-white/10"
     >
-      {dark ? "Light mode" : "Dark mode"}
-    </button>
+      {dark ? "☀ Light" : "☾ Dark"}
+    </Button>
   );
 }

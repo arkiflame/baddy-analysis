@@ -41,7 +41,7 @@ export function HeatCourt({
   void frame;
 
   return (
-    <div className="relative mx-auto w-full max-w-[560px]">
+    <div className="court-wrap relative mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none" onMouseLeave={() => setTip(null)}>
         <title id={`${uid}-t`}>{title}</title>
         <CourtLines view="player" />
@@ -100,7 +100,7 @@ export function HeatCourt({
           </g>
         )}
         <SideLabels half="player" left={labels.left} right={labels.right} />
-        <text x={px(0)} y={py(NET) - 28} fontSize="15" fill="var(--court-white)" aria-hidden="true">
+        <text x={px(0)} y={py(NET) - 28} style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)" aria-hidden="true">
           darker = {me} stands here more often
         </text>
       </svg>

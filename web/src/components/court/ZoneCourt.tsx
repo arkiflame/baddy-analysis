@@ -100,7 +100,7 @@ export function ZoneCourt({
   const pct = (X: number, Y: number) => ({ x: ((px(X) - v.x0) / v.w) * 100, y: ((py(Y) - v.y0) / v.h) * 100 });
 
   return (
-    <div className="relative mx-auto w-full max-w-[560px]">
+    <div className="court-wrap relative mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none" onMouseLeave={() => setTip(null)}>
         <title id={`${uid}-t`}>{title}</title>
         <CourtLines view={half} />
@@ -125,11 +125,17 @@ export function ZoneCourt({
               onBlur={() => setTip(null)}
             >
               <rect x={px(z.x) + 4} y={py(z.y) + 4} width={z.w * S - 8} height={z.h * S - 8} rx={6} fill={fillFor(st)} fillOpacity={st === "strong" || st === "weak" ? 0.92 : 0} />
-              <text x={px(cx)} y={py(cy) - 6} textAnchor="middle" fontSize="19" fontWeight="600" fill="var(--zone-ink)">
+              <text className="court-long" x={px(cx)} y={py(cy) - 6} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 19px)" }} fontWeight="600" fill="var(--zone-ink)">
                 {areaShort(z.zone)}
               </text>
-              <text x={px(cx)} y={py(cy) + 18} textAnchor="middle" fontSize="16" fill="var(--zone-ink)">
+              <text className="court-short" x={px(cx)} y={py(cy) - 6} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 17px)" }} fontWeight="600" fill="var(--zone-ink)">
+                {areaShort(z.zone).replace(", forehand side", " forehand").replace(", backhand side", " backhand")}
+              </text>
+              <text className="court-long" x={px(cx)} y={py(cy) + 18} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }} fill="var(--zone-ink)">
                 {line2(st, me)}
+              </text>
+              <text className="court-short" x={px(cx)} y={py(cy) + 18} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--zone-ink)">
+                {line2(st, me, true)}
               </text>
             </g>
           );
@@ -150,17 +156,17 @@ export function ZoneCourt({
               onBlur={() => setTip(null)}
             >
               <circle cx={px(body.X)} cy={py(body.Y)} r={rr} fill={st === "strong" || st === "weak" ? fillFor(st) : "var(--court-green)"} stroke="var(--court-white)" strokeWidth="3" />
-              <text x={px(body.X)} y={py(body.Y) - 4} textAnchor="middle" fontSize="15" fontWeight="600" fill="var(--zone-ink)">
+              <text x={px(body.X)} y={py(body.Y) - 4} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fontWeight="600" fill="var(--zone-ink)">
                 body
               </text>
-              <text x={px(body.X)} y={py(body.Y) + 14} textAnchor="middle" fontSize="12" fill="var(--zone-ink)">
+              <text x={px(body.X)} y={py(body.Y) + 14} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--zone-ink)">
                 {line2(st, me, true)}
               </text>
             </g>
           );
         })()}
         <SideLabels half={half} left={labels.left} right={labels.right} />
-        <text x={px(0)} y={half === "player" ? py(NET) - 28 : py(NET) + 40} fontSize="15" fill="var(--court-white)">
+        <text className="court-long" x={px(0)} y={half === "player" ? py(NET) - 28 : py(NET) + 40} style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)">
           {half === "player" ? `${me}'s half: shots ${me} receives` : `opponent's half: where ${me}'s shots land`}
         </text>
       </svg>

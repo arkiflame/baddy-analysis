@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 /** A disclosure for the technical layer (D30). Everything inside is marked `data-technical`
  *  so the jargon check (scripts/jargon_check.py) knows it is one click away from the main text.
@@ -19,16 +20,16 @@ export function Reveal({
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <div className={className}>
-      <button
-        type="button"
+    <div className={`${className} ${open ? "basis-full" : ""}`}>
+      <Button
+        variant="outline"
+        size="sm"
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((v) => !v)}
-        className="rounded border border-line bg-surface px-2.5 py-1 text-sm text-ink-2 hover:text-ink"
       >
         {open ? (hideLabel ?? label.replace(/^Show /, "Hide ")) : label}
-      </button>
+      </Button>
       <div id={id} hidden={!open} data-technical="" className="mt-2 space-y-2 text-sm">
         {open && children}
       </div>

@@ -1,24 +1,41 @@
 @import "tailwindcss";
 @import "./court.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Dark mode is a class on <html>, set before paint by the inline script in layout.tsx from the
    stored choice or the OS setting, so the toggle and prefers-color-scheme both work. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Colour roles. Light values are the reference data-viz palette (surfaces, ink, blue series,
-   blue <-> red diverging pair with a grey midpoint); dark values are the same hues re-stepped
-   for the dark surface. Text never takes a series colour; marks carry identity, text stays ink. */
+/* ---------------------------------------------------------------------------------------
+   Theme tokens (D32). Three brand colours: a deep navy for the header bands, court green as
+   the secondary colour, and shuttlecock yellow as the one bright accent. Everything on the
+   site reads one of these variables; the shadcn/ui tokens below are mapped onto them so the
+   library components wear the same palette. Light and dark are tuned separately, not flipped.
+   --------------------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #6b6a66;
-  --line: #e1e0d9;
-  --axis: #c3c2b7;
-  --accent: #1c5cab;
-  --accent-ink: #ffffff;
+  /* brand */
+  --navy: #0b1f3a;
+  --navy-2: #13305a;
+  --navy-ink: #ffffff;
+  --green: #2f7d4f;
+  --green-ink: #ffffff;
+  --green-soft: #e3f1e8;
+  --green-soft-ink: #14532d;
+  --yellow: #f5c518;
+  --yellow-ink: #1a1500;
+  --yellow-soft: #fff3c4;
+  /* page */
+  --page: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #0b1220;
+  --ink-2: #4b5565;
+  --line: #e2e6ee;
+  --axis: #c6ccd8;
+  --link: #1c5cab;
+  --link-ink: #ffffff;
+  /* data-viz (unchanged from the validated palette) */
   --seq: #2a78d6;
   --div-neg-1: #cde2fb;
   --div-neg-2: #9ec5f4;
@@ -29,22 +46,65 @@
   --div-pos-3: #e98a89;
   --court: #fcfcfb;
   --court-line: #52514e;
-  --warn-bg: #fff4d6;
+  --warn-bg: #fff3c4;
   --warn-ink: #5c4300;
   --warn-line: #e0b84d;
+  /* shadcn/ui tokens mapped onto the brand */
+  --background: var(--page);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--navy);
+  --primary-foreground: var(--navy-ink);
+  --secondary: var(--green-soft);
+  --secondary-foreground: var(--green-soft-ink);
+  --muted: #eaeef4;
+  --muted-foreground: var(--ink-2);
+  --accent: var(--yellow-soft);
+  --accent-foreground: var(--yellow-ink);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--link);
+  --chart-1: var(--navy);
+  --chart-2: var(--green);
+  --chart-3: var(--yellow);
+  --chart-4: var(--seq);
+  --chart-5: var(--ink-2);
+  --radius: 0.75rem;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--navy);
+  --sidebar-primary-foreground: var(--navy-ink);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--link);
+  --shadow-card: 0 1px 2px rgb(11 18 32 / 0.06), 0 8px 24px -12px rgb(11 18 32 / 0.18);
 }
 
 .dark {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --ink: #f0efec;
-  --ink-2: #c3c2b7;
-  --muted: #a3a29a;
-  --line: #2c2c2a;
-  --axis: #383835;
-  --accent: #86b6ef;
-  --accent-ink: #0b0b0b;
+  --navy: #060d1a;
+  --navy-2: #0f2446;
+  --navy-ink: #ffffff;
+  --green: #2f7d4f;
+  --green-ink: #ffffff;
+  --green-soft: #14331f;
+  --green-soft-ink: #bfe8cf;
+  --yellow: #f5c518;
+  --yellow-ink: #1a1500;
+  --yellow-soft: #3a2f08;
+  --page: #0b0f17;
+  --surface: #141a25;
+  --ink: #eef2f7;
+  --ink-2: #aab4c3;
+  --line: #263042;
+  --axis: #36425a;
+  --link: #8cbcf2;
+  --link-ink: #0b1220;
   --seq: #3987e5;
   --div-neg-1: #184f95;
   --div-neg-2: #1f63b5;
@@ -55,25 +115,107 @@
   --div-pos-3: #b83e3e;
   --court: #1a1a19;
   --court-line: #c3c2b7;
-  --warn-bg: #3b2f0a;
+  --warn-bg: #3a2f08;
   --warn-ink: #f6dc8a;
   --warn-line: #8a6a12;
+  --background: var(--page);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--yellow);
+  --primary-foreground: var(--yellow-ink);
+  --secondary: var(--green-soft);
+  --secondary-foreground: var(--green-soft-ink);
+  --muted: #1c2432;
+  --muted-foreground: var(--ink-2);
+  --accent: var(--yellow-soft);
+  --accent-foreground: #f6dc8a;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--link);
+  --chart-1: var(--link);
+  --chart-2: var(--green);
+  --chart-3: var(--yellow);
+  --chart-4: var(--seq);
+  --chart-5: var(--ink-2);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--yellow);
+  --sidebar-primary-foreground: var(--yellow-ink);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--link);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-navy-ink: var(--navy-ink);
+  --color-green: var(--green);
+  --color-green-ink: var(--green-ink);
+  --color-green-soft: var(--green-soft);
+  --color-green-soft-ink: var(--green-soft-ink);
+  --color-yellow: var(--yellow);
+  --color-yellow-ink: var(--yellow-ink);
+  --color-yellow-soft: var(--yellow-soft);
   --color-page: var(--page);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
-  --color-muted: var(--muted);
   --color-line: var(--line);
   --color-axis: var(--axis);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
+  --color-link: var(--link);
+  --color-link-ink: var(--link-ink);
   --color-warn-bg: var(--warn-bg);
   --color-warn-ink: var(--warn-ink);
   --color-warn-line: var(--warn-line);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
+  --shadow-card: var(--shadow-card);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 html {
@@ -87,6 +229,15 @@ body {
   line-height: 1.6;
 }
 
+/* Big, bold numbers for key stats: the condensed display face. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Body text never runs wider than about 70 characters (D30). */
 .prose-width {
   max-width: 70ch;
@@ -96,9 +247,17 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* A card surface: rounded, white, a subtle shadow. */
+.card-surface {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line);
+}
+
 /* Keyboard focus must be visible on every interactive element, including SVG groups. */
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--link);
   outline-offset: 2px;
 }
 
@@ -123,4 +282,16 @@ body {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

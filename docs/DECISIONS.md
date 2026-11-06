@@ -376,3 +376,46 @@ report states the thresholds it used.
   in two columns. Axelsen's page at 1280 x 900 went from 10.7 screens to the figure recorded in
   the commit message; at 390 px no horizontal overflow (a long warning badge was allowed to wrap).
   Before / after: `docs/polish-before-*.png`, `docs/polish-after-*.png`.
+
+## ui-redesign branch (2026-11-06, off ui-plain-language, not merged)
+
+### D32. Visual redesign on shadcn/ui: broadcast-graphics look, no wording or number changed
+* **Stack.** shadcn/ui (CLI 4.23, style "base-nova" on Base UI, works with Next 16 / React 19
+  and the static export) for cards, buttons, tabs, accordions and badges; Tailwind v4 was
+  already in place. Inter for body text and Barlow Condensed for the big numbers, both
+  self-hosted through `next/font/google` so the site makes no request to Google at run time.
+  The custom SVG courts are unchanged in content.
+* **Tokens.** Three brand colours in `globals.css`: navy `--navy` (#0b1f3a light / #060d1a
+  dark) for the header bands, court green `--green` (#2f7d4f) as the secondary colour and
+  shuttlecock yellow `--yellow` (#f5c518) as the one accent. The shadcn tokens (`--primary`,
+  `--secondary`, `--accent`, `--card`, `--border`, `--ring`, ...) are mapped onto them, and the
+  dark theme is tuned separately (yellow becomes the primary button colour on the dark surface,
+  the page is a navy-black, cards a lighter navy) rather than flipped. Links use `--link`; the
+  old `--accent` name now means the shadcn accent surface.
+* **Pages.** Home: a navy hero band with the site name, a one-line pitch and the search front
+  and centre; the player list is a grid of cards (name, hand, findings, matches and rallies won
+  in the display face); the three takeaway cards keep their text. Player page: a navy header
+  band with the name and five stat tiles; "In short" is three large highlight cards (the number
+  one way to beat, the number one thing to avoid, one habit) beside the hero court; every "1 in
+  X vs 1 in Y" sentence gets a two-bar visual (the player against most pros, bars proportional to
+  the two rates the sentence already states); Habits, Movement, Finishing and How we know are a
+  shadcn accordion, closed by default with their one-line summaries in the trigger; the zone
+  court's role switch is a tab list. Watch it: the video and the rally court sit side by side at
+  the full card width from 768 px up (the panel is a `basis-full` item in the card's button row)
+  and stack on phones.
+* **Court labels at 12 px or more.** The courts are SVGs drawn at 100 px per metre, so a label
+  shrinks with the court. Each court root is a CSS container (`.court-wrap`) and
+  `--court-font-scale` steps up as the container narrows (1.05 at 560 px, up to 2.1 under
+  320 px); long captions and side labels swap for short ones under 480 px (`.court-long` /
+  `.court-short`). Measured smallest rendered label on Axelsen's page: 14.1 px at 375, 12.4 px
+  at 768, 12.2 px at 1280 (the 300 px hero court), Watch-it open included.
+* **Checks.** `npm run build` 32 pages; tsc and eslint clean; 99 tests pass; jargon check 0
+  banned terms on 31 pages (the wording did not change); no horizontal overflow at 375, 768 or
+  1280 px; light and dark checked by screenshot at all three widths; Lighthouse on `/`,
+  `/players/viktor-axelsen/` and `/methods/`: accessibility 100 / 100 / 100, best practices 96,
+  performance 98 / 96 / 99. Before / after: `docs/redesign-before-home.png`,
+  `docs/redesign-before-player.png`, `docs/redesign-after-home.png`,
+  `docs/redesign-after-player.png`. The README screenshots were left as they are until this
+  branch is merged.
+* **Not done.** The reference screenshots mentioned in the brief did not arrive with it, so the
+  direction follows the written description only.

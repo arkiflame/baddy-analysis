@@ -62,7 +62,7 @@ export function HabitArrows({
   const stack: Record<string, number> = {}; // labels per target zone, stacked downward
 
   return (
-    <figure className="mx-auto w-full max-w-[560px]">
+    <figure className="court-wrap mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none">
         <title id={`${uid}-t`}>{title}</title>
         <ArrowMarkers id={uid} />
@@ -86,7 +86,7 @@ export function HabitArrows({
             x={px(o.X)}
             y={py(Math.min(origin.y + origin.h - 0.25, L - 1.0))}
             textAnchor="middle"
-            fontSize="16"
+            style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }}
             fontWeight="600"
             fill="var(--court-white)"
           >
@@ -122,16 +122,16 @@ export function HabitArrows({
                 markerEnd={`url(#${uid}-habit)`}
               />
               <rect x={px(t.X) - 100} y={ly - 20} width={200} height={42} rx={5} fill="var(--stroke-outline)" fillOpacity="0.78" />
-              <text x={px(t.X)} y={ly - 3} textAnchor="middle" fontSize="16" fontWeight="700" fill="#ffffff">
+              <text x={px(t.X)} y={ly - 3} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }} fontWeight="700" fill="#ffffff">
                 {label}
               </text>
-              <text x={px(t.X)} y={ly + 15} textAnchor="middle" fontSize="14" fill="#ffffff">
+              <text x={px(t.X)} y={ly + 15} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="#ffffff">
                 {sub}
               </text>
             </g>
           );
         })}
-        <text x={px(HALF_W)} y={py(0) - 42} textAnchor="middle" fontSize="14" fill="var(--court-white)" aria-hidden="true">
+        <text className="court-long" x={px(HALF_W)} y={py(0) - 42} textAnchor="middle" style={{ fontSize: "calc(var(--court-font-scale, 1) * 15px)" }} fill="var(--court-white)" aria-hidden="true">
           where {me} hits next
         </text>
       </svg>

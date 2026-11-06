@@ -24,7 +24,7 @@ export default async function Methods() {
   const lomo = ev?.totals.find((t) => t.scheme === "lomo");
 
   return (
-    <article className="max-w-[70ch] space-y-8 text-[17px] leading-relaxed">
+    <article className="mx-auto max-w-[70ch] space-y-8 px-4 py-8 text-[17px] leading-relaxed md:py-10">
       <h1 className="text-3xl font-semibold tracking-tight">How we check a pattern is real</h1>
       <p className="text-ink-2">
         Every card on a player page went through the same four steps. Here they are in plain words,
@@ -40,12 +40,12 @@ export default async function Methods() {
           free by the CoachAI research group. Players with at least {idx.settings.min_matches} matches
           get a page here ({d.players} players in total).
         </p>
-        <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+        <details className="card-surface p-3 text-[15px]" data-technical="">
           <summary className="cursor-pointer font-medium">Technical version</summary>
           <p className="pt-2">
             ShuttleSet (Wang, Huang, Ik, Peng, KDD 2023) and ShuttleSet22 (Wang, Du, Peng, IT4PSS at
             IJCAI 2023), MIT-licensed, from{" "}
-            <a className="text-accent underline" href="https://github.com/wywyWang/CoachAI-Projects">
+            <a className="text-link underline" href="https://github.com/wywyWang/CoachAI-Projects">
               CoachAI-Projects
             </a>
             . Stroke type, hitter and receiver positions at contact, landing point and rally outcome per
@@ -66,7 +66,7 @@ export default async function Methods() {
             point within the next {idx.settings.within === 2 ? "two" : idx.settings.within} shots. We do
             the same for shots the player hits and for shots hit at the player.
           </p>
-          <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+          <details className="card-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>
             <p className="pt-2">
               Outcome: P(point lost within {idx.settings.within} strokes | shot type × receiver zone).
@@ -86,7 +86,7 @@ export default async function Methods() {
             on the cards. A pattern is only interesting when the player differs from most pros, not just
             from their own average.
           </p>
-          <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+          <details className="card-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>
             <p className="pt-2">
               The reference is role-based: all strokes of the same type into the same zone received (or
@@ -105,7 +105,7 @@ export default async function Methods() {
             a finding. If it only just clears it, the card is listed as &ldquo;too close to call&rdquo;.
             If the range is very wide, or the count is small, the card says &ldquo;early sign&rdquo;.
           </p>
-          <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+          <details className="card-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>
             <p className="pt-2">
               Wilson 95% interval on each rate; a row needs n ≥ {idx.settings.min_n} on both sides.
@@ -127,7 +127,7 @@ export default async function Methods() {
             For the players with the most matches we also tested each finding on matches it was not
             found on; the results are below.
           </p>
-          <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+          <details className="card-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>
             <p className="pt-2">
               Leave-one-match-out selection stability: the top-{idx.settings.top_k} is re-selected once
@@ -152,7 +152,7 @@ export default async function Methods() {
               findings held up fully, {lomo["SAME DIRECTION"]} pointed the same way but with a wider margin,
               and {lomo.FAILS} went the other way. The table shows all three ways of testing.
             </p>
-            <div className="overflow-x-auto rounded border border-line bg-surface text-[15px]">
+            <div className="card-surface overflow-x-auto text-[15px]">
               <table className="tbl">
                 <caption className="sr-only">How many findings held up, for each way of testing</caption>
                 <thead>
@@ -182,7 +182,7 @@ export default async function Methods() {
               settle differences of a few points. That is why the two leave-one-out rows carry more
               weight, and why all three are always shown together.
             </p>
-            <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+            <details className="card-surface p-3 text-[15px]" data-technical="">
               <summary className="cursor-pointer font-medium">Per player, technical</summary>
               <div className="overflow-x-auto pt-3">
                 <table className="tbl">
@@ -229,7 +229,7 @@ export default async function Methods() {
           live &ldquo;who is ahead&rdquo; bar the same way, with a pass mark set in advance; it failed
           the pass mark and was not built. Both are reported rather than hidden.
         </p>
-        <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
+        <details className="card-surface p-3 text-[15px]" data-technical="">
           <summary className="cursor-pointer font-medium">Technical version</summary>
           <p className="pt-2">
             Expected points (xP) from shot and position data: on the {idx.xp.holdout_matches} holdout

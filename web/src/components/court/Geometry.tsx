@@ -137,7 +137,7 @@ export function CourtLines({ view }: { view: View }) {
       <line x1={px(HALF_W)} y1={py(NET + SHORT_SERVICE)} x2={px(HALF_W)} y2={py(L)} {...line} />
       {/* net */}
       <line x1={px(-0.3)} y1={py(NET)} x2={px(W + 0.3)} y2={py(NET)} stroke="var(--net)" strokeWidth={10} />
-      <text x={px(W + 0.3)} y={py(NET) - 10} textAnchor="end" fontSize="16" fill="var(--court-white)">
+      <text x={px(W + 0.3)} y={py(NET) - 10} textAnchor="end" style={{ fontSize: "calc(var(--court-font-scale, 1) * 16px)" }} fill="var(--court-white)">
         net
       </text>
     </g>
@@ -145,15 +145,24 @@ export function CourtLines({ view }: { view: View }) {
 }
 
 /** Side labels above (opponent's half) or below (player's half) the court. */
+/** "Axelsen's forehand side" -> "forehand" for narrow courts; the half caption says whose. */
+const shortSide = (s: string) => (s.includes("forehand") ? "forehand" : s.includes("backhand") ? "backhand" : s);
+
 export function SideLabels({ half, left, right }: { half: Half; left: string; right: string }) {
   const y = half === "player" ? py(L) + 34 : py(0) - 16;
   return (
-    <g aria-hidden="true" fontSize="18" fill="var(--court-white)">
-      <text x={px(HALF_W - SINGLES_HALF / 2)} y={y} textAnchor="middle">
+    <g aria-hidden="true" style={{ fontSize: "calc(var(--court-font-scale, 1) * 18px)" }} fill="var(--court-white)">
+      <text className="court-long" x={px(HALF_W - SINGLES_HALF / 2)} y={y} textAnchor="middle">
         {left}
       </text>
-      <text x={px(HALF_W + SINGLES_HALF / 2)} y={y} textAnchor="middle">
+      <text className="court-long" x={px(HALF_W + SINGLES_HALF / 2)} y={y} textAnchor="middle">
         {right}
+      </text>
+      <text className="court-short" x={px(HALF_W - SINGLES_HALF / 2)} y={y} textAnchor="middle">
+        {shortSide(left)}
+      </text>
+      <text className="court-short" x={px(HALF_W + SINGLES_HALF / 2)} y={y} textAnchor="middle">
+        {shortSide(right)}
       </text>
     </g>
   );
