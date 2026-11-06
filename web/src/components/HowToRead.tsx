@@ -12,7 +12,7 @@ export function HowToRead({
   return (
     <details className="rounded border border-line bg-surface p-4" open>
       <summary className="cursor-pointer text-lg font-semibold">How to read this page</summary>
-      <ul className="mt-2 max-w-[70ch] list-disc space-y-1 pl-5 text-ink-2">
+      <ul className="mt-2 grid list-disc gap-x-8 gap-y-1 pl-5 text-ink-2 sm:grid-cols-2">
         <li>
           Each card starts with what to do, in bold. Under it, one sentence says how often the
           situation costs {me} the point, and how often it costs most pros.

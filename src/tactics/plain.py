@@ -85,6 +85,9 @@ def at_area(zone: str, poss: str) -> str:
         return f"straight at {poss} body"
     if zone in ("out", "net_error"):
         return area(zone)
+    if zone in ("mid_fh", "mid_bh"):
+        # "to the middle of Axelsen's forehand side" reads better than a comma-spliced area
+        return f"to the middle of {poss} {'forehand' if zone == 'mid_fh' else 'backhand'} side"
     return f"to {poss} {area(zone)}"
 
 
@@ -229,15 +232,17 @@ def held_up(row: pd.Series, player: str) -> str | None:
     )
 
 
-def flags(row: pd.Series) -> list[str]:
+def flags(row: pd.Series, player: str) -> list[str]:
     """The warnings a reader must not miss, in plain words. Order: weakest claim first."""
     out = []
     if bool(row.get("candidate", True)) and borderline(row):
-        out.append("Too close to call: possible, not confident.")
+        out.append("Too close to call.")
     if bool(row.get("tentative", tentative(row))):
         out.append("Early sign: not enough rallies to be sure.")
     if int(row.get("folds", 0) or 0) and not is_stable(row):
-        out.append("Came and went between re-checks: a lead, not a finding.")
+        out.append(
+            f"Only showed up in some of {possessive(player)} matches, so treat it as a hunch."
+        )
     return out
 
 
@@ -256,14 +261,14 @@ def situation_words(sit: str, poss: str) -> str:
 
 
 def reply_verb(reply: str) -> str:
-    """'smash -> mid_fh' -> 'smashes to the opponent's middle of the court, forehand side'."""
+    """'smash -> mid_fh' -> 'smashes to the middle of the opponent's forehand side'."""
     shot, _, zone = reply.partition(" -> ")
     verb = shot_verb3(shot)
     return f"{verb} {at_area(zone, 'the opponent' + chr(39) + 's')}" if zone else verb
 
 
 def reply_noun(reply: str) -> str:
-    """'smash -> mid_fh' -> 'a smash to the opponent's middle of the court, forehand side'."""
+    """'smash -> mid_fh' -> 'a smash to the middle of the opponent's forehand side'."""
     shot, _, zone = reply.partition(" -> ")
     return (
         f"{a_shot(shot)} {at_area(zone, 'the opponent' + chr(39) + 's')}" if zone else a_shot(shot)
@@ -360,7 +365,7 @@ def mean_sentence(row: pd.Series, player: str, kind: str) -> str:
     if bool(row.get("signal")) and abs(delta) >= 0.005:
         more = "more" if delta > 0 else "less"
         return f"{head}, {cm(delta)} {more} than most pros."
-    return f"{head}, about the same as most pros."
+    return f"{head}, like most pros."
 
 
 def finishing_sentence(row: pd.Series, player: str) -> str:

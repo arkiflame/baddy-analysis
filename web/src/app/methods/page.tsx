@@ -100,11 +100,10 @@ export default async function Methods() {
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">3. Doubt</h3>
           <p>
-            A handful of shots can mislead. Every difference therefore comes with a range of how far off
-            it could be. If the range includes &ldquo;no difference&rdquo;, the card is not shown as a
-            finding. If it only just clears it, the card is listed as &ldquo;possible, not
-            confident&rdquo;. If the range is very wide, or the count is small, the card says
-            &ldquo;early sign&rdquo;.
+            A handful of shots can mislead. Every difference therefore comes with a range that says how
+            far off it can be. If the range includes &ldquo;no difference&rdquo;, the card is not shown as
+            a finding. If it only just clears it, the card is listed as &ldquo;too close to call&rdquo;.
+            If the range is very wide, or the count is small, the card says &ldquo;early sign&rdquo;.
           </p>
           <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>
@@ -124,9 +123,9 @@ export default async function Methods() {
           <h3 className="text-lg font-semibold">4. Re-check</h3>
           <p>
             We remove one of the player&apos;s matches at a time and ask whether the pattern would still
-            have made the top five. A pattern that comes and went is shown as a lead, not a finding. For
-            the players with the most matches we also tested each finding on matches it was not found
-            on; the results are below.
+            have made the top five. A pattern that only showed up in some matches is marked as a hunch.
+            For the players with the most matches we also tested each finding on matches it was not
+            found on; the results are below.
           </p>
           <details className="rounded border border-line bg-surface p-3 text-[15px]" data-technical="">
             <summary className="cursor-pointer font-medium">Technical version</summary>

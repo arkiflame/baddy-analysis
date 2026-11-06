@@ -142,12 +142,18 @@ export const situationWords = (situation: string, poss = "the"): string => {
   const [shot, zone] = situation.split(" -> ");
   if (!zone || zone === "any") return `${aShot(shot)}, wherever it lands`;
   if (zone === "body") return `${aShot(shot)} straight at ${poss} body`;
-  return `${aShot(shot)} to ${poss} ${areaWords(zone)}`;
+  return `${aShot(shot)} ${toArea(zone, poss)}`;
 };
+
+/** "to Axelsen's back backhand corner" / "to the middle of Axelsen's forehand side". */
+export const toArea = (zone: string, poss: string): string =>
+  zone === "mid_fh" || zone === "mid_bh"
+    ? `to the middle of ${poss} ${zone === "mid_fh" ? "forehand" : "backhand"} side`
+    : `to ${poss} ${areaWords(zone)}`;
 
 /** "smash -> mid_fh" -> "smash to the middle of the court, forehand side". */
 export const replyWords = (reply: string): string => {
   const [shot, zone] = reply.split(" -> ");
   const s = shot.replace(/_/g, " ");
-  return zone ? `${s} to the ${areaWords(zone)}` : s;
+  return zone ? `${s} ${toArea(zone, "the opponent's")}` : s;
 };

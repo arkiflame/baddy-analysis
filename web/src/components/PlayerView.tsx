@@ -3,9 +3,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/Badge";
 import { HowToRead } from "@/components/HowToRead";
-import { InsightCard, Numbers, PlainFlags } from "@/components/InsightCard";
+import { InsightBody, InsightCard, PlainFlags } from "@/components/InsightCard";
 import { Reveal } from "@/components/ShowNumbers";
-import { WatchIt } from "@/components/WatchIt";
 import {
   MeanTable,
   PredictabilityTable,
@@ -14,13 +13,12 @@ import {
   TendencyTable,
   XpTable,
 } from "@/components/Tables";
-import { HabitArrows } from "@/components/court/HabitArrows";
+import { HABIT_ARROWS, HabitArrows } from "@/components/court/HabitArrows";
 import { HeatCourt } from "@/components/court/HeatCourt";
 import { HeroCourt } from "@/components/court/HeroCourt";
-import { RallyCourt } from "@/components/court/RallyCourt";
 import { ZoneCourt, ZoneLegend } from "@/components/court/ZoneCourt";
-import { int, num, numCi, pct, pctCi, shotWords, situationWords } from "@/lib/format";
-import type { CoachItem, Insight, PlayerFile, RallyStroke, RateRow } from "@/lib/types";
+import { int, num, numCi, pct, pctCi, replyWords, shotWords, situationWords, wholePct } from "@/lib/format";
+import type { CoachItem, Insight, PlayerFile, RateRow, TendencyRow } from "@/lib/types";
 
 /* ------------------------------------------------------------------------------------ */
 /* Small pieces                                                                          */
@@ -58,7 +56,40 @@ function Section({
   );
 }
 
+/** A section that is closed by default: the heading and a one-line summary stay visible. */
+function Folded({
+  id,
+  title,
+  summary,
+  children,
+}: {
+  id: string;
+  title: string;
+  summary: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <details id={id} className="group scroll-mt-4 rounded border border-line bg-surface">
+      <summary className="cursor-pointer list-none p-4 [&::-webkit-details-marker]:hidden">
+        <h2 className="text-xl font-semibold tracking-tight">
+          <span aria-hidden="true" className="mr-2 inline-block text-ink-2 transition-transform group-open:rotate-90">
+            ▶
+          </span>
+          {title}
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-ink-2">{summary}</p>
+      </summary>
+      <div className="space-y-3 border-t border-line p-4">{children}</div>
+    </details>
+  );
+}
+
 const keyOf = (i: Insight) => `${i.analysis}|${i.key}`;
+
+const firstSentence = (s: string) => {
+  const m = s.match(/^.*?[.!?](\s|$)/);
+  return m ? m[0].trim() : s;
+};
 
 /* ------------------------------------------------------------------------------------ */
 /* Coach lists                                                                           */
@@ -68,14 +99,14 @@ function CoachCards({
   items,
   me,
   empty,
+  start = 1,
   trainingNote,
-  renderRallyFor,
 }: {
   items: CoachItem[];
   me: string;
   empty: string;
+  start?: number;
   trainingNote?: boolean;
-  renderRallyFor: (strokes: RallyStroke[], title: string) => ReactNode;
 }) {
   if (!items.length) return <p className="max-w-[70ch] text-ink-2">{empty}</p>;
   return (
@@ -85,8 +116,7 @@ function CoachCards({
           <InsightCard
             i={c.insight}
             me={me}
-            number={n + 1}
-            renderRally={renderRallyFor}
+            number={start + n}
             aside={
               trainingNote ? (
                 <p className="text-sm text-ink-2">
@@ -184,6 +214,52 @@ function ZoneExplorer({ data, me }: { data: PlayerFile; me: string }) {
 }
 
 /* ------------------------------------------------------------------------------------ */
+/* Habit diagram with the rest of the replies behind a toggle                            */
+/* ------------------------------------------------------------------------------------ */
+
+function HabitDiagram({
+  situation,
+  rows,
+  me,
+  fhOnRight,
+  frame,
+}: {
+  situation: string;
+  rows: TendencyRow[];
+  me: string;
+  fhOnRight: boolean;
+  frame: PlayerFile["positions"]["frame"];
+}) {
+  const sorted = [...rows].sort((a, b) => b.rate - a.rate);
+  const rest = sorted.slice(HABIT_ARROWS);
+  return (
+    <div className="space-y-2 rounded border border-line bg-surface p-3">
+      <h3 className="font-semibold">After {situationWords(situation, `${me}'s`)}</h3>
+      <HabitArrows
+        situation={situation}
+        replies={sorted.map((r) => ({ reply: r.reply, rate: r.rate, ref_rate: r.ref_rate, n: r.n }))}
+        me={me}
+        fhOnRight={fhOnRight}
+        frame={frame}
+        title={`Where ${me} usually hits after ${situationWords(situation, `${me}'s`)}`}
+      />
+      {rest.length > 0 && (
+        <Reveal label={`Show all ${sorted.length} replies`} hideLabel={`Show the top ${HABIT_ARROWS} only`}>
+          <ul className="space-y-1">
+            {sorted.map((r) => (
+              <li key={r.reply}>
+                <span className="font-medium">{replyWords(r.reply)}</span>: {wholePct(r.rate)} of the time; most pros{" "}
+                {wholePct(r.ref_rate)}.
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------------------ */
 /* The page                                                                              */
 /* ------------------------------------------------------------------------------------ */
 
@@ -196,20 +272,25 @@ export function PlayerView({ data }: { data: PlayerFile }) {
   const p = data.positions;
   const x = data.xp;
 
-  const rally = (strokes: RallyStroke[], title: string) => <RallyCourt strokes={strokes} me={me} title={title} />;
-
-  // Hero: up to three takeaways drawn on the court, strongest first.
-  const heroItems = data.summary.slice(0, 3).map((s, n) => ({
-    n: n + 1,
-    role: s.insight.role,
-    zone: s.insight.zone,
-    shot: s.insight.shot,
-    kind: (s.insight.delta ?? 0) < 0 ? ("strong" as const) : ("weak" as const),
-  }));
+  // "In short": the #1 way to beat the player, the #1 thing to avoid, one habit to watch for.
+  // Each appears here only; the full lists below start from the second item.
+  const beat = data.coach.fix[0];
+  const avoid = data.coach.against[0];
+  const habitRows = h.by_shot.filter((r) => r.habit);
+  const watchHabit = habitRows[0];
+  const heroItems = [beat, avoid]
+    .filter((it): it is CoachItem => Boolean(it))
+    .map((it, n) => ({
+      n: n + 1,
+      role: it.insight.role,
+      zone: it.insight.zone,
+      shot: it.insight.shot,
+      kind: (it.insight.delta ?? 0) < 0 ? ("strong" as const) : ("weak" as const),
+    }));
 
   // Habits: the situations with the most replies get a drawing; the rest are sentences.
   const habitSituations = useMemo(() => {
-    const groups = new Map<string, { rows: typeof h.by_shot_zone; n: number }>();
+    const groups = new Map<string, { rows: TendencyRow[]; n: number }>();
     for (const r of h.by_shot_zone) {
       if (r.situation.endsWith("-> any")) continue;
       const g = groups.get(r.situation) ?? { rows: [], n: r.n };
@@ -221,13 +302,16 @@ export function PlayerView({ data }: { data: PlayerFile }) {
       .sort((a, b) => b[1].n - a[1].n)
       .slice(0, 2);
   }, [h]);
-  const habitSentences = h.by_shot.filter((r) => r.habit).slice(0, 5);
+  const habitSentences = habitRows.slice(1, 5);
   const easyToRead = h.predictability.filter((r) => r.more_predictable).slice(0, 3);
   const hardToRead = h.predictability.filter((r) => r.less_predictable).slice(0, 2);
   const openings = (["serve", "receive"] as const).map((role) => ({
     role,
     rows: (h.set_plays[`${role}3`] ?? []).filter((r) => r.candidate).slice(0, 2),
   }));
+  const habitsSummary = `${habitRows.length} ${habitRows.length === 1 ? "reply" : "replies"} ${me} chooses more often than most pros, ${
+    habitSituations.length
+  } drawn on the court, and how ${me}'s rallies start.`;
 
   const pullSignals = p.pull.filter((r) => r.signal && r.plain).slice(0, 3);
   const pullSame = p.pull.filter((r) => !r.signal && r.plain).slice(0, 2);
@@ -235,7 +319,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
   const finishing = x?.finishing.filter((r) => r.plain) ?? [];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <header className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight">{data.player}</h1>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -257,39 +341,54 @@ export function PlayerView({ data }: { data: PlayerFile }) {
         id="summary"
         title="In short"
         lead={
-          data.summary.length
-            ? `The findings that held up best, drawn on the court. Numbers on the markers match the list.`
+          beat || avoid || watchHabit
+            ? `Three things to take to the court. The first two are drawn on it.`
             : `No pattern for ${me} is both solid and well tested yet, so there is no short version. The cards below say how sure we are about each one.`
         }
       >
-        {data.summary.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-[minmax(0,360px)_1fr]">
-            <HeroCourt
-              items={heroItems}
-              me={me}
-              fhOnRight={fhRight}
-              frame={p.frame}
-              bodyAt={{ x: p.base.lat_right, y: p.base.depth }}
-              title={`${me}'s three biggest takeaways drawn on the court`}
-            />
-            <ol className="space-y-3">
-              {data.summary.slice(0, 3).map((s, n) => (
-                <li key={keyOf(s.insight)} className="space-y-1">
+        {(beat || avoid || watchHabit) && (
+          <div className="grid gap-4 md:grid-cols-[minmax(0,300px)_1fr]">
+            {heroItems.length > 0 && (
+              <HeroCourt
+                items={heroItems}
+                me={me}
+                fhOnRight={fhRight}
+                frame={p.frame}
+                bodyAt={{ x: p.base.lat_right, y: p.base.depth }}
+                title={`The number one way to beat ${me} and the number one thing to avoid, drawn on the court`}
+              />
+            )}
+            <ol className="space-y-4">
+              {beat && (
+                <li className="space-y-1">
+                  <p className="text-sm font-medium text-ink-2">The number one way to beat {me}</p>
                   <p>
                     <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-semibold text-page">
-                      {n + 1}
+                      1
                     </span>
-                    <strong>{s.insight.headline}</strong>
+                    <strong>{beat.insight.headline}</strong>
                   </p>
-                  <p className="max-w-[70ch] text-ink-2">{s.insight.evidence}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <WatchIt examples={s.insight.examples} me={me} renderRally={rally} />
-                    <Reveal label="Show the numbers">
-                      <Numbers i={s.insight} me={me} />
-                    </Reveal>
-                  </div>
+                  <InsightBody i={beat.insight} me={me} />
                 </li>
-              ))}
+              )}
+              {avoid && (
+                <li className="space-y-1">
+                  <p className="text-sm font-medium text-ink-2">The number one thing to avoid</p>
+                  <p>
+                    <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-semibold text-page">
+                      {beat ? 2 : 1}
+                    </span>
+                    <strong>{avoid.insight.headline}</strong>
+                  </p>
+                  <InsightBody i={avoid.insight} me={me} />
+                </li>
+              )}
+              {watchHabit && (
+                <li className="space-y-1">
+                  <p className="text-sm font-medium text-ink-2">One habit to watch for</p>
+                  <p className="max-w-[70ch]">{watchHabit.plain}</p>
+                </li>
+              )}
             </ol>
           </div>
         )}
@@ -298,78 +397,80 @@ export function PlayerView({ data }: { data: PlayerFile }) {
       <Section
         id="beat"
         title={`How to beat ${me}`}
-        lead={`Where ${me} loses the point more often than most pros. Each card is something an opponent can do.`}
+        lead={`Where ${me} loses the point more often than most pros. Each card is something an opponent can do.${
+          beat ? " Number 1 is above." : ""
+        }`}
       >
         <CoachCards
-          items={data.coach.fix}
+          items={data.coach.fix.slice(1)}
           me={me}
-          empty={`Nothing here: no situation costs ${me} the point clearly more often than it costs most pros.`}
+          start={2}
+          empty={
+            beat
+              ? `That is the only one: no other situation costs ${me} the point clearly more often than it costs most pros.`
+              : `Nothing here: no situation costs ${me} the point clearly more often than it costs most pros.`
+          }
           trainingNote
-          renderRallyFor={rally}
         />
       </Section>
 
       <Section
         id="strengths"
         title={`What ${me} does well`}
-        lead={`Where ${me} loses the point less often than most pros. Each card is something an opponent should not count on.`}
+        lead={`Where ${me} loses the point less often than most pros. Each card is something an opponent should not count on.${
+          avoid ? " Number 1 is above." : ""
+        }`}
       >
         <CoachCards
-          items={data.coach.against}
+          items={data.coach.against.slice(1)}
           me={me}
-          empty={`Nothing here: no situation is clearly safer for ${me} than for most pros.`}
-          renderRallyFor={rally}
+          start={2}
+          empty={
+            avoid
+              ? `That is the only one: no other situation is clearly safer for ${me} than for most pros.`
+              : `Nothing here: no situation is clearly safer for ${me} than for most pros.`
+          }
         />
         {data.coach.possible.length > 0 && (
           <details className="rounded border border-warn-line bg-surface p-4">
             <summary className="cursor-pointer font-semibold">
-              Possible, not confident ({data.coach.possible.length})
+              Too close to call ({data.coach.possible.length})
             </summary>
             <p className="mb-3 mt-2 max-w-[70ch] text-ink-2">{data.coach.possible_note_plain}</p>
-            <CoachCards items={data.coach.possible} me={me} empty="" renderRallyFor={rally} />
+            <CoachCards items={data.coach.possible} me={me} empty="" />
           </details>
         )}
       </Section>
 
-      <Section
-        id="habits"
-        title="Habits"
-        lead={`What ${me} tends to do next, compared with most pros in the same spot. Based on ${int(h.n_replies)} of ${me}'s replies.`}
-      >
+      <Folded id="habits" title="Habits" summary={habitsSummary}>
+        <p className="max-w-[70ch] text-ink-2">
+          What {me} usually does next, compared with most pros in the same spot. Based on {int(h.n_replies)} of{" "}
+          {me}&apos;s replies.{watchHabit ? " The habit to watch for is above." : ""}
+        </p>
         {habitSituations.length > 0 && (
           <div className="grid gap-4 lg:grid-cols-2">
             {habitSituations.map(([situation, g]) => (
-              <div key={situation} className="space-y-2 rounded border border-line bg-surface p-3">
-                <h3 className="font-semibold">After {situationWords(situation, `${me}'s`)}</h3>
-                <HabitArrows
-                  situation={situation}
-                  replies={g.rows.map((r) => ({ reply: r.reply, rate: r.rate, ref_rate: r.ref_rate, n: r.n }))}
-                  me={me}
-                  fhOnRight={fhRight}
-                  frame={p.frame}
-                  title={`Where ${me} usually hits after ${situationWords(situation, `${me}'s`)}`}
-                />
-              </div>
+              <HabitDiagram key={situation} situation={situation} rows={g.rows} me={me} fhOnRight={fhRight} frame={p.frame} />
             ))}
           </div>
         )}
         {habitSentences.length > 0 ? (
           <ul className="space-y-2">
             {habitSentences.map((r) => (
-              <li key={`${r.situation}|${r.reply}`} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+              <li key={`${r.situation}|${r.reply}`} className="max-w-[70ch] rounded border border-line bg-page p-3">
                 {r.plain}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="max-w-[70ch] text-ink-2">No reply stands out from what most pros do.</p>
+          !watchHabit && <p className="max-w-[70ch] text-ink-2">No reply stands out from what most pros do.</p>
         )}
         {(easyToRead.length > 0 || hardToRead.length > 0) && (
           <div className="space-y-2">
             <h3 className="font-semibold">How predictable {me} is</h3>
             <ul className="space-y-2">
               {[...easyToRead, ...hardToRead].map((r) => (
-                <li key={r.situation} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                <li key={r.situation} className="max-w-[70ch] rounded border border-line bg-page p-3">
                   {r.plain}
                 </li>
               ))}
@@ -382,7 +483,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
             <ul className="space-y-2">
               {openings.flatMap((o) =>
                 o.rows.map((r) => (
-                  <li key={`${o.role}-${r.sequence}`} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+                  <li key={`${o.role}-${r.sequence}`} className="max-w-[70ch] rounded border border-line bg-page p-3">
                     {r.plain}
                   </li>
                 )),
@@ -407,13 +508,13 @@ export function PlayerView({ data }: { data: PlayerFile }) {
             )),
           )}
         </Reveal>
-      </Section>
+      </Folded>
 
-      <Section
-        id="movement"
-        title="Movement"
-        lead={`Where ${me} stands and how far ${me} is pulled. Positions are known only at the moment a shot is hit, so real distances are a little longer than these.`}
-      >
+      <Folded id="movement" title="Movement" summary={firstSentence(p.plain_base)}>
+        <p className="max-w-[70ch] text-ink-2">
+          Where {me} stands and how far {me} is pulled. Positions are known only at the moment a shot is hit, so
+          real distances are a little longer than these.
+        </p>
         <p className="max-w-[70ch]">{p.plain_base}</p>
         <HeatCourt
           grid={p.grids.receive}
@@ -432,13 +533,11 @@ export function PlayerView({ data }: { data: PlayerFile }) {
         />
         <ul className="space-y-2">
           {[...pullSignals, ...pullSame].map((r) => (
-            <li key={r.label} className="max-w-[70ch] rounded border border-line bg-surface p-3">
+            <li key={r.label} className="max-w-[70ch] rounded border border-line bg-page p-3">
               {r.plain}
             </li>
           ))}
-          {perHit?.plain && (
-            <li className="max-w-[70ch] rounded border border-line bg-surface p-3">{perHit.plain}</li>
-          )}
+          {perHit?.plain && <li className="max-w-[70ch] rounded border border-line bg-page p-3">{perHit.plain}</li>}
         </ul>
         <Reveal label="Show the tables">
           <p>
@@ -454,12 +553,33 @@ export function PlayerView({ data }: { data: PlayerFile }) {
           <h4 className="font-semibold">Distance per own stroke</h4>
           <MeanTable rows={p.per_hit} caption="Distance per own stroke" first="per own hit" unit="m" />
         </Reveal>
-      </Section>
+      </Folded>
 
-      <Section
+      {x && (
+        <Folded
+          id="finishing"
+          title="Finishing"
+          summary={finishing[0]?.plain ?? `How ${me}'s rally-ending shots compare with most pros'.`}
+        >
+          {finishing.length > 0 ? (
+            <ul className="space-y-2">
+              {finishing.map((r) => (
+                <li key={r.label} className="max-w-[70ch] rounded border border-line bg-page p-3">
+                  {r.plain}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="max-w-[70ch] text-ink-2">Too few rally-ending shots of any one kind to compare.</p>
+          )}
+          <p className="max-w-[70ch] text-ink-2">{x.plain_note}</p>
+        </Folded>
+      )}
+
+      <Folded
         id="how"
         title="How we know"
-        lead="Four checks stand behind every card. The full story is on the Methods page."
+        summary={`Four checks behind every card, and a court map of where ${me} wins and loses points.`}
       >
         <ol className="max-w-[70ch] list-decimal space-y-1 pl-5">
           <li>
@@ -472,43 +592,24 @@ export function PlayerView({ data }: { data: PlayerFile }) {
           </li>
           <li>
             <strong>Doubt.</strong> Small numbers of shots can mislead, so each difference comes with a range
-            of how far off it could be. If that range includes &ldquo;no difference&rdquo;, the card is not shown
+            that says how far off it can be. If that range includes &ldquo;no difference&rdquo;, the card is not shown
             as a finding.
           </li>
           <li>
             <strong>Re-check.</strong> We removed one of {me}&apos;s {int(c.matches)} matches at a time and
-            asked whether the pattern was still among the top five. Patterns that came and went are
-            marked as leads, not findings.
+            asked whether the pattern was still among the top five. Patterns that only showed up in some
+            matches are marked as hunches.
           </li>
         </ol>
         <p className="max-w-[70ch] text-ink-2">
           <a href="/methods/" className="text-accent underline">
             Read the Methods page
           </a>{" "}
-          for the replication results across players and the things that did not work.
+          for the re-test results across players and the things that did not work.
         </p>
 
         <h3 className="pt-2 font-semibold">Where {me} wins and loses points</h3>
         <ZoneExplorer data={data} me={me} />
-
-        {x && (
-          <div className="space-y-2 pt-2">
-            <h3 className="font-semibold">What we could not do</h3>
-            <p className="max-w-[70ch]">{x.plain_note}</p>
-            {finishing.length > 0 && (
-              <>
-                <h3 className="font-semibold">Finishing</h3>
-                <ul className="space-y-2">
-                  {finishing.map((r) => (
-                    <li key={r.label} className="max-w-[70ch] rounded border border-line bg-surface p-3">
-                      {r.plain}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        )}
 
         <Reveal label="Show the technical tables" className="pt-2">
           <p className="max-w-[70ch]">
@@ -588,7 +689,7 @@ export function PlayerView({ data }: { data: PlayerFile }) {
             <code className="text-xs">{data.command}</code>.
           </p>
         </Reveal>
-      </Section>
+      </Folded>
     </div>
   );
 }

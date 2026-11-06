@@ -354,3 +354,25 @@ report states the thresholds it used.
 * **Embeds only.** youtube-nocookie.com iframes plus a plain YouTube link; nothing from a
   broadcast is stored. A video that disables embedding still shows YouTube's own "watch on
   YouTube" link inside the frame; embeddability cannot be checked without an API key.
+
+### D31. Polish before merge: one short list, step-through rallies, fewer screens (2026-11-06)
+* **"In short" is three items, each shown once.** The first "How to beat" card, the first "What
+  the player does well" card and the first habit sentence open the page; the hero court draws
+  the first two; the full lists below start at number 2 and say "Number 1 is above".
+* **Rally viewer.** The Watch-it court draws the last four shots up to and including the shot
+  the card is about, larger and numbered, with Prev / Next shot buttons and "Show whole rally".
+* **Habit courts** draw the three most frequent replies (labels 16 px, stacked per target zone
+  so nothing overlaps); the full list sits behind "Show all replies".
+* **Wording.** The unstable flag is "Only showed up in some of <player>'s matches, so treat it
+  as a hunch." and the borderline flag "Too close to call."; "about 2 m from base, about the
+  same as most pros" became "..., like most pros"; mid-court areas read "the middle of Axelsen's
+  forehand side". The jargon check now treats a collapsed `<details>` body as main text (only
+  `data-technical` hides), and a hedge sweep (possibly / might / seems / tends to / could be /
+  not confident / lead-not-finding / two "about"s in one sentence) found nothing left in the main
+  text beyond the "Doubt" step, which was reworded. The exported JSON was patched in place with
+  exactly these replacements and verified string-for-string against a fresh Axelsen export.
+* **Fewer screens.** Habits, Movement, Finishing and How we know are `<details>` closed by
+  default with a one-line summary each; the hero court is 300 px wide and the reading key sits
+  in two columns. Axelsen's page at 1280 x 900 went from 10.7 screens to the figure recorded in
+  the commit message; at 390 px no horizontal overflow (a long warning badge was allowed to wrap).
+  Before / after: `docs/polish-before-*.png`, `docs/polish-after-*.png`.

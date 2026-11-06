@@ -55,10 +55,13 @@ def test_frequencies_read_like_speech():
 def test_areas_are_named_like_players_name_them():
     assert plain.area("rear_bh") == "back backhand corner"
     assert plain.at_area("body", "Axelsen's") == "straight at Axelsen's body"
-    assert plain.at_area("mid_fh", "your") == "to your middle of the court, forehand side"
+    assert plain.at_area("mid_fh", "your") == "to the middle of your forehand side"
     assert plain.situation_words("clear -> rear_bh", "X's") == "a clear to X's back backhand corner"
     assert plain.situation_words("clear -> any", "X's") == "a clear, wherever it lands"
-    assert plain.reply_verb("smash -> mid_fh").startswith("smashes to the opponent's middle")
+    assert (
+        plain.reply_verb("smash -> mid_fh")
+        == "smashes to the middle of the opponent's forehand side"
+    )
 
 
 def test_planted_pattern_gets_an_imperative_headline_and_plain_evidence():
@@ -106,7 +109,7 @@ def test_planted_pattern_gets_an_imperative_headline_and_plain_evidence():
             "danger_hit_coach_zone",
             "hit coach_zone mid_fh",
             -0.04,
-            "Be ready for anything X plays to your middle of the court, forehand side.",
+            "Be ready for anything X plays to the middle of your forehand side.",
         ),
         (
             "danger_hit_shot_coarse@pressure",
@@ -128,16 +131,16 @@ def test_headline_templates(analysis, key, delta, expected):
 def test_flags_and_held_up_are_plain():
     s = AnalysisSettings()
     row = _row("danger_faced", "faced net -> front_fh", 0.1)
-    assert plain.flags(row) == []
+    assert plain.flags(row, "X") == []
     assert plain.held_up(row, "X") == (
         "It held up in 15 of 20 re-checks, each one leaving out a different match of X's."
     )
     weak = _row("danger_faced", "faced net -> front_fh", 0.1, tentative=True, selected_folds=4)
     weak["delta_lo"] = 0.002
-    assert plain.flags(weak) == [
-        "Too close to call: possible, not confident.",
+    assert plain.flags(weak, "X") == [
+        "Too close to call.",
         "Early sign: not enough rallies to be sure.",
-        "Came and went between re-checks: a lead, not a finding.",
+        "Only showed up in some of X's matches, so treat it as a hunch.",
     ]
     assert plain.held_up(_row("danger_faced", "faced net -> front_fh", 0.1, folds=0), "X") is None
     assert s.within == 2  # the page defines "quickly" as within two shots
@@ -202,7 +205,7 @@ def test_movement_and_finishing_sentences():
     same = pd.Series(
         {"label": "defensive", "mean": 1.667, "ref_mean": 1.648, "delta": 0.019, "signal": False}
     )
-    assert plain.mean_sentence(same, "X", "pull").endswith("about the same as most pros.")
+    assert plain.mean_sentence(same, "X", "pull").endswith("from base, like most pros.")
     fin = pd.Series({"label": "smash", "delta": 0.104, "signal": True})
     assert plain.finishing_sentence(fin, "X") == (
         "When X's smashes end the rally, they are winners rather than mistakes more often than most pros'."

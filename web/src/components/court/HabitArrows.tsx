@@ -24,10 +24,14 @@ export interface HabitReply {
   n: number;
 }
 
+export const HABIT_ARROWS = 3; // replies drawn per diagram; the rest are listed as text
+
 /**
  * "After a clear to the back backhand corner, where does the player hit next?" The incoming
  * shot's landing zone is marked on the player's half; one arrow per reply goes to the zone it
- * targets on the opponent's half, thicker when the player chooses it more often.
+ * targets on the opponent's half, thicker when the player chooses it more often. Only the
+ * `HABIT_ARROWS` most frequent replies are drawn, so labels (16 px) never overlap: labels that
+ * share a target zone stack downward in 46 px steps, and zone centres are at least 185 px apart.
  */
 export function HabitArrows({
   situation,
@@ -54,7 +58,7 @@ export function HabitArrows({
   const o = { X: origin.x + origin.w / 2, Y: origin.y + origin.h / 2 };
   const labels = sideLabelsFor("player", me, fhOnRight);
   const topLabels = sideLabelsFor("opponent", me, fhOnRight);
-  const sorted = [...replies].sort((a, b) => b.rate - a.rate);
+  const sorted = [...replies].sort((a, b) => b.rate - a.rate).slice(0, HABIT_ARROWS);
   const stack: Record<string, number> = {}; // labels per target zone, stacked downward
 
   return (
@@ -78,14 +82,21 @@ export function HabitArrows({
             strokeWidth="3"
             strokeDasharray="10 8"
           />
-          <text x={px(o.X)} y={py(Math.min(o.Y + 0.9, L - 1.1))} textAnchor="middle" fontSize="17" fontWeight="600" fill="var(--court-white)">
+          <text
+            x={px(o.X)}
+            y={py(Math.min(origin.y + origin.h - 0.25, L - 1.0))}
+            textAnchor="middle"
+            fontSize="16"
+            fontWeight="600"
+            fill="var(--court-white)"
+          >
             {aShot(inShot)} lands here
           </text>
         </g>
         {sorted.map((r, i) => {
           const [shot, zone] = r.reply.split(" -> ");
           const t = zoneCentre(zone ?? null, frame.coach_bands, "opponent", fhOnRight);
-          const w = Math.max(2, Math.min(14, 2 + 12 * r.rate));
+          const w = Math.max(3, Math.min(16, 3 + 13 * r.rate));
           // shorten the arrow so the head stops inside the target zone
           const dx = t.X - o.X;
           const dy = t.Y - o.Y;
@@ -96,7 +107,7 @@ export function HabitArrows({
           const sub = `most pros ${wholePct(r.ref_rate)}`;
           const slot = stack[zone ?? "any"] ?? 0;
           stack[zone ?? "any"] = slot + 1;
-          const ly = py(t.Y) - 20 + slot * 40;
+          const ly = py(t.Y) - 24 + slot * 46;
           return (
             <g key={`${r.reply}-${i}`} role="img" aria-label={`${label} to the ${zone ? areaShort(zone) : "opponent's half"}; ${sub}`}>
               <line x1={px(o.X)} y1={py(o.Y)} x2={px(ex)} y2={py(ey)} stroke="var(--stroke-outline)" strokeWidth={w + 3} strokeLinecap="round" strokeOpacity="0.6" />
@@ -110,11 +121,11 @@ export function HabitArrows({
                 strokeLinecap="round"
                 markerEnd={`url(#${uid}-habit)`}
               />
-              <rect x={px(t.X) - 92} y={ly - 17} width={184} height={36} rx={5} fill="var(--stroke-outline)" fillOpacity="0.72" />
-              <text x={px(t.X)} y={ly - 2} textAnchor="middle" fontSize="15" fontWeight="600" fill="#ffffff">
+              <rect x={px(t.X) - 100} y={ly - 20} width={200} height={42} rx={5} fill="var(--stroke-outline)" fillOpacity="0.78" />
+              <text x={px(t.X)} y={ly - 3} textAnchor="middle" fontSize="16" fontWeight="700" fill="#ffffff">
                 {label}
               </text>
-              <text x={px(t.X)} y={ly + 14} textAnchor="middle" fontSize="12" fill="#ffffff">
+              <text x={px(t.X)} y={ly + 15} textAnchor="middle" fontSize="14" fill="#ffffff">
                 {sub}
               </text>
             </g>
@@ -125,7 +136,8 @@ export function HabitArrows({
         </text>
       </svg>
       <figcaption className="mt-1 text-xs text-ink-2">
-        Thicker arrow = {me} plays it more often. Only replies seen often enough to compare are drawn.
+        The {sorted.length === 1 ? "reply" : `${sorted.length} replies`} {me} chooses most often here. Thicker
+        arrow = chosen more often.
       </figcaption>
     </figure>
   );

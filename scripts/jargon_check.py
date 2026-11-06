@@ -50,7 +50,9 @@ BANNED_RE = re.compile("|".join(f"(?:{b})" for b in BANNED))
 # Elements whose whole subtree is one click away or not text at all.
 SKIP_ATTR = "data-technical"
 SKIP_TAGS = {"script", "style", "noscript", "template", "svg"}
-HIDE_IN = {"details"}  # the body of a <details> is collapsed; its <summary> is visible
+HIDE_IN: set[str] = (
+    set()
+)  # a collapsed <details> body still counts as main text; data-technical hides
 BLOCK_TAGS = {
     "p",
     "li",

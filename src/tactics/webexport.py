@@ -129,7 +129,7 @@ def insight_record(
         "headline": plain.headline(row, player, s),
         "evidence": plain.evidence(row, player, s),
         "held_up": plain.held_up(row, player),
-        "flags": plain.flags(row),
+        "flags": plain.flags(row, player),
         "examples": examples_for(row) if examples_for else [],
         "analysis": str(row.analysis),
         "key": str(row.key),

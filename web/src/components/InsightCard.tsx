@@ -3,7 +3,7 @@ import { Badge } from "@/components/Badge";
 import { Reveal } from "@/components/ShowNumbers";
 import { WatchIt } from "@/components/WatchIt";
 import { int, pct, pts, ptsCi } from "@/lib/format";
-import type { Insight, RallyStroke } from "@/lib/types";
+import type { Insight } from "@/lib/types";
 
 /** The technical layer of one insight, one click away (D30): the exact figures, each with a
  *  one-sentence explanation of the term it uses. */
@@ -63,18 +63,33 @@ export function PlainFlags({ flags }: { flags: string[] }) {
   );
 }
 
+/** The headline, evidence, warnings and the two buttons: the body of every card. */
+export function InsightBody({ i, me, aside }: { i: Insight; me: string; aside?: ReactNode }) {
+  return (
+    <>
+      <p className="max-w-[70ch] text-ink-2">{i.evidence}</p>
+      {aside}
+      <PlainFlags flags={i.flags} />
+      <div className="flex flex-wrap items-start gap-2 pt-1">
+        <WatchIt examples={i.examples} me={me} />
+        <Reveal label="Show the numbers">
+          <Numbers i={i} me={me} />
+        </Reveal>
+      </div>
+    </>
+  );
+}
+
 /** One insight: the coaching takeaway in bold, one plain sentence of evidence, the warnings a
  *  reader must not miss, then "Watch it" and "Show the numbers" one click away. */
 export function InsightCard({
   i,
   me,
-  renderRally,
   number,
   aside,
 }: {
   i: Insight;
   me: string;
-  renderRally: (strokes: RallyStroke[], title: string) => ReactNode;
   number?: number;
   aside?: ReactNode;
 }) {
@@ -84,15 +99,7 @@ export function InsightCard({
         {number !== undefined && <span className="mr-2 text-ink-2">{number}.</span>}
         <strong>{i.headline}</strong>
       </p>
-      <p className="max-w-[70ch] text-ink-2">{i.evidence}</p>
-      {aside}
-      <PlainFlags flags={i.flags} />
-      <div className="flex flex-wrap items-start gap-2 pt-1">
-        <WatchIt examples={i.examples} me={me} renderRally={renderRally} />
-        <Reveal label="Show the numbers">
-          <Numbers i={i} me={me} />
-        </Reveal>
-      </div>
+      <InsightBody i={i} me={me} aside={aside} />
     </article>
   );
 }

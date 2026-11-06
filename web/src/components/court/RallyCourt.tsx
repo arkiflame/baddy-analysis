@@ -6,11 +6,29 @@ import { ArrowMarkers, CourtLines, HALF_W, L, px, py, viewBox } from "./Geometry
  * One rally drawn on a full court, the player's half at the bottom: every stroke is an arrow
  * from where it was hit to where it landed, numbered in order. The stroke the insight is about
  * is drawn thicker with a halo. Strokes without a recorded endpoint are skipped.
+ *
+ * `range` limits the drawing to stroke numbers [from, to] (inclusive) and draws them larger,
+ * for the step-through view; without it the whole rally is drawn.
  */
-export function RallyCourt({ strokes, me, title }: { strokes: RallyStroke[]; me: string; title: string }) {
+export function RallyCourt({
+  strokes,
+  me,
+  title,
+  range,
+}: {
+  strokes: RallyStroke[];
+  me: string;
+  title: string;
+  range?: [number, number];
+}) {
   const uid = useId();
   const v = viewBox("full");
-  const drawn = strokes.filter((s) => s.from && s.to);
+  const inRange = (s: RallyStroke) => !range || (s.no >= range[0] && s.no <= range[1]);
+  const drawable = strokes.filter((s) => s.from && s.to);
+  const drawn = drawable.filter(inRange);
+  const big = Boolean(range);
+  const r = big ? 24 : 16;
+  const font = big ? 24 : 17;
   return (
     <figure className="mx-auto w-full max-w-[560px]">
       <svg viewBox={v.vb} role="img" aria-labelledby={`${uid}-t`} className="h-auto w-full select-none">
@@ -27,7 +45,7 @@ export function RallyCourt({ strokes, me, title }: { strokes: RallyStroke[]; me:
           const [x1, y1] = s.from as [number, number];
           const [x2, y2] = s.to as [number, number];
           const colour = s.by === "me" ? "var(--stroke-me)" : "var(--stroke-opp)";
-          const w = s.highlight ? 10 : 5;
+          const w = (s.highlight ? 10 : 5) + (big ? 3 : 0);
           const label = `${s.no}. ${s.by === "me" ? me : "opponent"}: ${s.shot.replace(/_/g, " ")}${s.highlight ? " (this is the shot)" : ""}`;
           return (
             <g key={s.no} aria-label={label} role="img">
@@ -45,8 +63,8 @@ export function RallyCourt({ strokes, me, title }: { strokes: RallyStroke[]; me:
                 strokeLinecap="round"
                 markerEnd={`url(#${uid}-${s.by})`}
               />
-              <circle cx={px(x1)} cy={py(y1)} r={16} fill={colour} stroke="var(--stroke-outline)" strokeWidth="2" />
-              <text x={px(x1)} y={py(y1) + 6} textAnchor="middle" fontSize="17" fontWeight="700" fill="#0b0b0b">
+              <circle cx={px(x1)} cy={py(y1)} r={r} fill={colour} stroke="var(--stroke-outline)" strokeWidth="2" />
+              <text x={px(x1)} y={py(y1) + font * 0.36} textAnchor="middle" fontSize={font} fontWeight="700" fill="#0b0b0b">
                 {s.no}
               </text>
             </g>
@@ -55,8 +73,8 @@ export function RallyCourt({ strokes, me, title }: { strokes: RallyStroke[]; me:
       </svg>
       <figcaption className="mt-1 text-xs text-ink-2">
         White arrows: {me}&apos;s shots. Yellow arrows: the opponent&apos;s. The thick arrow is the shot this
-        insight is about. Numbers give the order.
-        {drawn.length < strokes.length ? ` ${strokes.length - drawn.length} of ${strokes.length} strokes had no recorded landing point and are not drawn.` : ""}
+        card is about. Numbers give the order.
+        {drawable.length < strokes.length ? ` ${strokes.length - drawable.length} of ${strokes.length} strokes had no recorded landing point and are not drawn.` : ""}
       </figcaption>
     </figure>
   );
