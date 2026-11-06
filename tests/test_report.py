@@ -95,11 +95,11 @@ def test_borderline_intervals_are_possible_not_confident(rep):
     assert planted in {(r.analysis, r.key) for r in maybe}
     assert planted not in {(r.analysis, r.key) for r in weak + strong}
     text = possible_bullet(ins.loc[i], "X", s)
-    assert text.startswith("**") and "touches zero" in text and "+0 to" in text
+    assert text.startswith("**") and "touches zero" in text and "(0 to" in text
     row = ins.loc[i].copy()
     row["delta"], row["delta_lo"], row["delta_hi"] = -0.05, -0.1, -0.004
     assert "-0" not in possible_bullet(row, "X", s).split("(")[-1]  # never prints '-0'
-    assert "to +0)" in possible_bullet(row, "X", s)
+    assert "to 0)" in possible_bullet(row, "X", s)
 
 
 def test_takeaways_use_stable_non_tentative_insights_without_numbers(rep):

@@ -207,8 +207,9 @@ def _situation(p: dict, me: str) -> str:
 
 
 def _pts(v: float) -> str:
-    """A difference in whole percentage points with its sign, never '-0'."""
-    return f"{int(round(v * 100)):+d}"
+    """A difference in whole percentage points with its sign; zero is plain '0', never '-0'."""
+    r = int(round(v * 100))
+    return f"{r:+d}" if r else "0"
 
 
 def _numbers(row: pd.Series, s: AnalysisSettings, me: str) -> str:
